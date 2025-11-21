@@ -1,36 +1,35 @@
-// ESP32 TX and RX Pins
-#define ESP32_TX_PIN 37   // ESP32 TX (pin 37) -> Pi RX (pin 10)
-#define ESP32_RX_PIN 36   // ESP32 RX (pin 36) -> Pi TX (pin 8)
+#include <Arduino.h>
+#include <HardwareSerial.h>
 
-#define ESP32_RTS_PIN 15 //ESP32 RTS (pin 15) -> Pi RTS (pin 11)
-#define ESP32_CTS_PIN 16 //ESP32 CTS (pin 16) -> Pi CTS (pin 36)
+// ======================================================== //
+HardwareSerial SerialUART32_0(0); //UART0
+HardwareSerial SerialUART32_1(1); //UART1
+
+#define UART_TX_PIN 43 //GPIO UART transmit pin
+#define UART_RX_PIN 44 //GPIO UART recieve pin
+// ======================================================== //
 
 void setup() {
-  Serial.begin(115200);  // Baud Rate, Serial is also ESP32 -> Serial Monitor
-  Serial.println("Serial for ESP32 started.");
-  delay(1000);
-  Serial.println("Booting...");
 
-  // Tell Serial2 (CM4) which pins to use
-  Serial2.setPins(ESP32_TX_PIN, ESP32_RX_PIN, ESP32_CTS_PIN, ESP32_RTS_PIN);
-  Serial.println("Serial2 for Pi started.");
+  //Serial Monitor Initialization
+  Serial.begin(115200);
+  delay(5000);
+  Serial.println("Beginning ESP32-S3 UART test.");
+  
+  //UART0 initialization 
+  SerialUART32_0.begin(115200, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
+  delay(5000);
+  Serial.println("UART0 initialized on TX = 43, and RX = 44 @ 115200 baud."); 
 
-  //Start UART, baud + 8N1
-  Serial2.begin(115200, SERIAL_8N1, ESP32_RX_PIN, ESP32_TX_PIN);
-  Serial2.println("Serial2 for Pi started w/ RTS/CTS.");
 }
 
 void loop() {
 
-  //SERIAL IS FROM ESP
-  //SERIAL2 IS FROM CM4
-
-  // Send a test message every second
-  Serial.println("Sent from ESP32: Hello from ESP32 w/ RTS/CTS!");
+  //Print from UART0 in ESP32
+  SerialUART32_0.println("Hello from UARTSerial0 in ESP32!");
   delay(5000);
 
-  int c = Serial2.read();
-  Serial2.print("Sent from Pi: Hello from Pi CM4! ");
-  Serial2.println(c);
-  delay(5000);
+  Serial.println("Hello message sent on UART0.");
+  
+
 }
