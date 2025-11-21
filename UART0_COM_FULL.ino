@@ -110,6 +110,16 @@ void loop() {
   SerialUART32_0.printf("BPM: %d", bpm);
   SerialUART32_0.println(" ");
 
+
+  Serial.printf("Raw: %d", raw);
+  Serial.println(" ");
+  Serial.printf("Baseline: %d", baseline);
+  Serial.println(" ");
+  Serial.printf("Difference: %d", diff);
+  Serial.println(" ");
+  Serial.printf("BPM: %d", bpm);
+  Serial.println(" ");
+
   delay(200);
 
   int ldrValue = analogRead(ldrPin); 
