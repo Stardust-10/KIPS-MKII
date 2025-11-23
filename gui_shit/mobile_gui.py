@@ -56,7 +56,7 @@ class Launcher(Gtk.Application):
 
         self.add_window(win)
 
-        win.fullscreen()
+        #win.fullscreen()
         win.show_all()
 
         # If your .glade left a single FlowBox in the Stack, remove it; we create pages dynamically.
