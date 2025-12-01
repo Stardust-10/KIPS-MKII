@@ -6,6 +6,13 @@
 
 //DEFINITIONS
 // ======================================================== //
+
+#define U0CTS_ESP_PIN 15
+#define U0RTS_ESP_PIN 16
+
+#define CM4_CTS0 36 //ON WAVESHARE MINI B DEV BOARD (CM4 GPIO 16 -> DEV BOARD PIN 36 ->  ESP32CTS GPIO 15)
+#define CM4_RTS0 11 //ON WAVESHARE MINI B DEV BOARD (CM4 GPIO 17 -> DEV BOARD PIN 11 -> ESP GPIO 16)
+
 #define HEARTRATE_PIN 4
 #define SAMPLING 10
 
@@ -89,8 +96,7 @@ void loop() {
   int diff = raw - baseline; //Will be positive when above baseline
 
   //Peak detection
-    //If it crosses ABOVE the threshold, its a "beat"
-  
+  //If it crosses ABOVE the threshold, its a "beat"
   if(!above && diff > THRESHOLD) {
     above = true;
 
@@ -105,8 +111,10 @@ void loop() {
   }
 
   if(above && diff < 0) {
+    
     //if it falls back below the baseline -> end of beat window
     above = false;
+  
   }
   // ======================================================== //
 
