@@ -1,0 +1,29 @@
+/* styles.css */
+body {
+  background-color: #f0f0f0;
+  font-family: Arial, sans-serif;
+}
+h1 {
+  color: navy;
+  font-size: 40px;
+}
+
+h2 {
+  font-size: 20px;
+}
+
+h3 {
+  font-size: 16px;
+}
+
+.Ribbon{
+  display: flex;
+  align-items: center;
+  gap:10px;
+}
+
+.image{
+  witdth: 170px;
+  height: auto;
+  align: "center-align";
+}
