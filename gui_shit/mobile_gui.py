@@ -1,6 +1,8 @@
 from datetime import datetime
 from gi.repository import Gtk, Gdk, GLib
 import os
+import subprocess
+from gi.repository import Gio
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -89,27 +91,29 @@ class Launcher(Gtk.Application):
         ]'''
 
         self.apps = [
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "calculator", "exec": "galculator", 
+            "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "glade", "exec": "glade",
+            "icon_path": os.path.join(BASE_DIR, "glade_icon.png")},
+            {"name": "app_test3.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test4.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
+            {"name": "app_test5.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test6.png", "icon_path": os.path.join(BASE_DIR, "test_icon.png")},
+            {"name": "app_test7.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test8.png", "icon_path": os.path.join(BASE_DIR, "Untitled.svg")},
+            {"name": "app_test9.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test10.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
+            {"name": "app_test11.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test12.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
+            {"name": "app_test13.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test14.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
+            {"name": "app_test15.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test16.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
+            {"name": "app_test17.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test18.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
+            {"name": "app_test19.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test20.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
+            {"name": "app_test21.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
                         
             # ... add more
         ]
@@ -260,8 +264,21 @@ class Launcher(Gtk.Application):
         return box
 
     def launch_app(self, app):
-        print("Launch:", app["name"])
-        # TODO hook into your launch mechanism
+        
+        # TODO ensure that apps launch only once and prevent further launches
+        
+        cmd = app.get("exec")
+        if cmd:
+            print("Launching:", app["name"])
+            subprocess.Popen([cmd])
+        else:
+            print("No execution path found for", app["name"])
+            
+        # This was an alternate solution. Worth looking into for potential changes
+        # info = Gio.DesktopAppInfo.new("org.gnome.Calculator.desktop")
+        # info.launch([], None) 
+        
+        # TODO further hook into launch mechanism 
 
     # ---------- C. Dots ----------
     def _rebuild_dots(self, num_pages):
@@ -269,12 +286,16 @@ class Launcher(Gtk.Application):
             self.pager_box.remove(child)
 
         for i in range(num_pages):
-            dot = Gtk.Label(label="●" if i == 0 else "○")
+            dot = Gtk.Button(label="●" if i == 0 else "○")
             dot.set_name("pager-dot")
+            dot.set_relief(Gtk.ReliefStyle.NONE)
+            dot.set_focus_on_click(False)
+            dot.set_can_focus(False)
+            
             dot.set_margin_left(3)
             dot.set_margin_right(3)
 
-            dot.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+            #dot.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
             dot.connect("button-press-event", self._on_dot_clicked, i)
 
             self.pager_box.pack_start(dot, False, False, 3)
@@ -286,12 +307,14 @@ class Launcher(Gtk.Application):
             return
         index = max(0, min(index, len(children)-1))
         self.stack.set_visible_child(children[index])
+        
+        self._on_page_changed(1)
 
     def _on_page_changed(self, *_):
         idx = self._current_index()
         for i, child in enumerate(self.pager_box.get_children()):
-            if isinstance(child, Gtk.Label):
-                child.set_text("●" if i == idx else "○")
+            if isinstance(child, Gtk.Button):
+                child.set_label("●" if i == idx else "○")
 
 
 if __name__ == "__main__":
