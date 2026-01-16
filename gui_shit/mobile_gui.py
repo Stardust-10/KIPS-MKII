@@ -3,6 +3,7 @@ from gi.repository import Gtk, Gdk, GLib
 import os
 import subprocess
 from gi.repository import Gio
+from gi.repository import GdkPixbuf
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -19,6 +20,15 @@ class Launcher(Gtk.Application):
         self.clock_label = None
         self.apps = []  # list of dicts: {"name": "Calculator", "icon": "accessories-calculator"}
 
+    def _set_image_scaled(self, image_widget, file_path, size_px=28):
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+            file_path, 
+            width=size_px, 
+            height=size_px,
+            preserve_aspect_ratio=True
+        )
+        image_widget.set_from_pixbuf(pixbuf)
+
     def _update_clock(self):
         if self.clock_label is None:
             return False
@@ -28,6 +38,64 @@ class Launcher(Gtk.Application):
 
         self.clock_label.set_text(time_str)
         return True
+
+    def _update_volume_icon(self, level):
+        if self.volume_icon is None:
+            return      
+        if level == 0:
+            icon_name = "volume_mute.png"
+        elif level <= 33:
+            icon_name = "volume_low.png"
+        elif level <= 66:
+            icon_name = "volume_medium.png"
+        else:
+            icon_name = "volume_high.png"
+
+        self._set_image_scaled(self.volume_icon, icon_name, size_px=28)
+
+    def _update_wifi_icon(self, strength):
+        if self.wifi_icon is None:
+            return      
+        if strength >= 4:
+            icon_name = "wifi_full.png"
+        elif strength == 3:
+            icon_name = "wifi_75.png"
+        elif strength == 2:
+            icon_name = "wifi_50.png"
+        elif strength == 1:
+            icon_name = "wifi_25.png"
+        else:
+            icon_name = "wifi_none.png"
+
+        self._set_image_scaled(self.wifi_icon, icon_name, size_px=28)
+
+    def _update_battery_icon(self, percentage, is_charging):
+        if self.battery_icon is None:
+            return      
+        if is_charging:
+            icon_name = "battery_charging.png"
+        elif percentage <= 10:
+            icon_name = "battery_9.png"
+        elif percentage <= 20:
+            icon_name = "battery_8.png"
+        elif percentage <= 30:
+            icon_name = "battery_7.png"
+        elif percentage <= 40:
+            icon_name = "battery_6.png"
+        elif percentage <= 50:
+            icon_name = "battery_5.png"
+        elif percentage <= 60:
+            icon_name = "battery_4.png"
+        elif percentage <= 70:
+            icon_name = "battery_3.png"
+        elif percentage <= 80:
+            icon_name = "battery_2.png"
+        elif percentage <= 90:
+            icon_name = "battery_1.png"
+        else:
+            icon_name = "battery_0.png"
+
+        self._set_image_scaled(self.battery_icon, icon_name, size_px=100)
 
     def _build_pages(self):
         chunks = [self.apps[i:i+PAGE_SIZE] for i in range(0, len(self.apps), PAGE_SIZE)] or [[]]
@@ -55,7 +123,7 @@ class Launcher(Gtk.Application):
         self.stack = self.builder.get_object("app_stack") or self._first_of_type(Gtk.Stack)
         self.pager_box = self.builder.get_object("pager_box") or self._ensure_pager_box()
         self.clock_label = self.builder.get_object("clock_label")
-
+        self.battery_icon = self.builder.get_object("battery_icon")
         self.add_window(win)
 
         #win.fullscreen()
@@ -125,6 +193,11 @@ class Launcher(Gtk.Application):
         self.stack.connect("notify::visible-child", self._on_page_changed)
 
         self._update_clock()
+        ######################################################
+        self._update_battery_icon(31, False)  # example values
+        #self._update_volume_icon(50)      # example values
+        #self._update_wifi_icon(3)         # example values
+        ######################################################
         GLib.timeout_add_seconds(60, self._update_clock)
 
         win.set_application(self)
