@@ -10,6 +10,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROWS, COLS = 3, 4
 PAGE_SIZE = ROWS * COLS
 
+value = 1
+wifi_val = 0
+vol_value = 0
+
 class Launcher(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.example.Launcher")
@@ -29,49 +33,83 @@ class Launcher(Gtk.Application):
         )
         image_widget.set_from_pixbuf(pixbuf)
 
+    def _update_battery_val(self):
+        global value
+        print(f'battery_value: {value}')
+        if value < 100:
+            value += 1
+        else:
+            value = 1
+        self._update_battery_icon(value, False)  # example values
+
+        return(value)
+    
+    def _update_wifi_val(self):
+        global wifi_val
+        print(f'wifi_val: {wifi_val}')
+        if wifi_val < 5:
+            wifi_val += 1
+        else:
+            wifi_val = 0
+        self._update_wifi_icon(wifi_val)
+        return True
+
+    def _update_volume_val(self):
+        global vol_value
+        print(f"Volume: {vol_value}")
+        if vol_value < 100:
+            vol_value += 1
+        else:
+            vol_value = 0
+        self._update_volume_icon(vol_value)
+        return True
+
     def _update_clock(self):
         if self.clock_label is None:
             return False
         now = datetime.now()
 
         time_str = now.strftime("%H:%M")
-
+        print(time_str)
         self.clock_label.set_text(time_str)
         return True
 
     def _update_volume_icon(self, level):
         if self.volume_icon is None:
-            return      
-        if level == 0:
-            icon_name = "volume_mute.png"
-        elif level <= 33:
-            icon_name = "volume_low.png"
-        elif level <= 66:
-            icon_name = "volume_medium.png"
+            return False     
+        if level >= 100:
+            icon_name = "volume_4.png"
+        elif level >= 66:
+            icon_name = "volume_3.png"
+        elif level >= 33:
+            icon_name = "volume_2.png"
+        elif level > 0:
+            icon_name = "volume_1.png"
         else:
-            icon_name = "volume_high.png"
+            icon_name = "volume_0.png"
 
         self._set_image_scaled(self.volume_icon, icon_name, size_px=28)
 
     def _update_wifi_icon(self, strength):
         if self.wifi_icon is None:
-            return      
+            return False      
         if strength >= 4:
-            icon_name = "wifi_full.png"
+            icon_name = "wifi_4.png"
         elif strength == 3:
-            icon_name = "wifi_75.png"
+            icon_name = "wifi_3.png"
         elif strength == 2:
-            icon_name = "wifi_50.png"
+            icon_name = "wifi_2.png"
         elif strength == 1:
-            icon_name = "wifi_25.png"
+            icon_name = "wifi_1.png"
         else:
-            icon_name = "wifi_none.png"
+            icon_name = "wifi_0.png"
 
         self._set_image_scaled(self.wifi_icon, icon_name, size_px=28)
 
     def _update_battery_icon(self, percentage, is_charging):
         if self.battery_icon is None:
-            return      
+            print('false')
+            return False      
         if is_charging:
             icon_name = "battery_charging.png"
         elif percentage <= 10:
@@ -124,6 +162,8 @@ class Launcher(Gtk.Application):
         self.pager_box = self.builder.get_object("pager_box") or self._ensure_pager_box()
         self.clock_label = self.builder.get_object("clock_label")
         self.battery_icon = self.builder.get_object("battery_icon")
+        self.wifi_icon = self.builder.get_object("wifi_icon")
+        self.volume_icon = self.builder.get_object("volume_icon")
         self.add_window(win)
 
         #win.fullscreen()
@@ -166,16 +206,16 @@ class Launcher(Gtk.Application):
             {"name": "app_test3.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
             {"name": "app_test4.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
             {"name": "app_test5.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "app_test6.png", "icon_path": os.path.join(BASE_DIR, "test_icon.png")},
-            {"name": "app_test7.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "app_test8.png", "icon_path": os.path.join(BASE_DIR, "Untitled.svg")},
-            {"name": "app_test9.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test6.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
+            {"name": "app_test7.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
+            {"name": "app_test8.png", "icon_path": os.path.join(BASE_DIR, "test.svg")},
+            {"name": "app_test9.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
             {"name": "app_test10.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test11.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test11.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
             {"name": "app_test12.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test13.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test13.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
             {"name": "app_test14.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test15.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "app_test15.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
             {"name": "app_test16.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
             {"name": "app_test17.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
             {"name": "app_test18.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
@@ -194,11 +234,15 @@ class Launcher(Gtk.Application):
 
         self._update_clock()
         ######################################################
-        self._update_battery_icon(31, False)  # example values
+
+            
         #self._update_volume_icon(50)      # example values
         #self._update_wifi_icon(3)         # example values
         ######################################################
-        GLib.timeout_add_seconds(60, self._update_clock)
+        GLib.timeout_add_seconds(1, self._update_clock)
+        GLib.timeout_add_seconds(1, self._update_battery_val)
+        GLib.timeout_add_seconds(1, self._update_volume_val)  # example values
+        GLib.timeout_add_seconds(5, self._update_wifi_val)  # example values
 
         win.set_application(self)
         win.show_all()
