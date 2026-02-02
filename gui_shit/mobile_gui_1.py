@@ -135,7 +135,7 @@ class Launcher(Gtk.Application):
     def _update_wifi_icon(self, strength):
         if self.wifi_icon is None:
             return False      
-        if strength > -40:
+        if strength >= -39:
             icon_name = "wifi_4.png"
         elif strength >= -55:
             icon_name = "wifi_3.png"
