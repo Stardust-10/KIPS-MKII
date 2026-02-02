@@ -1,0 +1,25 @@
+#main_root {
+	background-image: url("/home/kips/Downloads/wp4615534-2698296615.jpg");
+	background-size: cover;
+	background-repeat: no-repeat;
+}
+
+
+#nav_bar {
+    background-color: red;
+}
+
+#status_bar {
+    background-color: black;
+}
+
+#content_stack {
+    background-color: transparent;
+}
+
+#appHolder {
+	background-color: black;
+}
+ #app_stack {
+	background-color:black;
+ }
