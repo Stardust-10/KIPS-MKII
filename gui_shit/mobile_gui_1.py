@@ -5,10 +5,12 @@ import subprocess
 from gi.repository import Gio
 from gi.repository import GdkPixbuf
 import subprocess
+from dataclasses import dataclass
 
 screen = Gdk.Screen.get_default()
 provider = Gtk.CssProvider()
-provider.load_from_path("/home/kips/Desktop/kips_files/gui_shit/style.css")
+#provider.load_from_path("/home/kips/Desktop/kips_files/gui_shit/style.css")
+provider.load_from_path("C:\\msys64\\home\\jljme\\styles.css")
 Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 #os.path.dirname(os.path.abspath(__file__))
@@ -20,6 +22,30 @@ value = 1
 wifi_val = 0
 vol_value = 0
 
+@dataclass
+class AppEntry:
+    app_id: str                         # e.g. "calc_app"
+    title: str                          # e.g. "calculator"
+    icon_path: str                      # Path to icon
+
+    stack_name: str                     # The name of the page in the content stack
+    is_open: bool = False               # Is the page open?
+    #content_page: Gtk.Widget = None    
+    nav_widget: Gtk.Widget = None       # Where the created icon is stored
+
+"""
+App Launcher logic:
+
+if app.is_open
+
+else
+    create new GtkEventBox and GtkImage
+    store entry in appentry
+    pack_start icon ino nav_bar box
+    set is_open of he app to true
+self.content_stack.set_visible_child_name(app.stack_name)
+"""
+
 class Launcher(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.example.Launcher")
@@ -28,6 +54,9 @@ class Launcher(Gtk.Application):
         self.stack = None
         self.pager_box = None
         self.clock_label = None
+        self.temp_label = None
+        self.humidity_label = None
+        self.nav_bar = None
         self.apps = []  # list of dicts: {"name": "Calculator", "icon": "accessories-calculator"}
 
     def _set_image_scaled(self, image_widget, file_path, size_px=28):
@@ -114,6 +143,7 @@ class Launcher(Gtk.Application):
         time_str = now.strftime("%H:%M")
         #print(time_str)
         self.clock_label.set_text(time_str)
+        self.clock_app_label.set_text(time_str)
         return True
 
     def _update_volume_icon(self, level):
@@ -206,12 +236,44 @@ class Launcher(Gtk.Application):
 
         win = self.builder.get_object("main_window") or self._first_of_type(Gtk.Window)
         self.window = win
+        self.content_stack = self.builder.get_object("content_stack")
         self.stack = self.builder.get_object("app_stack") or self._first_of_type(Gtk.Stack)
         self.pager_box = self.builder.get_object("pager_box") or self._ensure_pager_box()
         self.clock_label = self.builder.get_object("clock_label")
         self.battery_icon = self.builder.get_object("battery_icon")
         self.wifi_icon = self.builder.get_object("wifi_icon")
         self.volume_icon = self.builder.get_object("volume_icon")
+        self.temp_label = self.builder.get_object("temp_label")
+        self.humidity_label = self.builder.get_object("humidity")
+        self.nav_bar = self.builder.get_object("nav_bar")
+        self.nav_icon_1_eb = self.builder.get_object("nav_icon_1_eb")
+        self.status_button = self.builder.get_object("status_button")
+        self.apps_button = self.builder.get_object("apps_button")
+        self.clock_button = self.builder.get_object("clock_button")
+        self.shell_stack = self.builder.get_object("shell_stack")
+        self.clock_exit_button = self.builder.get_object("clock_exit_button")
+        self.clock_app_label = self.builder.get_object("clock_app_label")
+        self.settings_button = self.builder.get_object("settings_button")
+
+        if self.nav_icon_1_eb is not None:
+            self.nav_icon_1_eb.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+            self.nav_icon_1_eb.connect("button-press-event", self._on_nav_icon_1_clicked)
+
+        if self.status_button is not None:
+            self.status_button.connect("clicked", self._on_status_button_clicked)
+        
+        if self.apps_button is not None:
+            self.apps_button.connect("clicked", self._on_apps_button_clicked)
+
+        if self.settings_button is not None:
+            self.settings_button.connect("clicked", self._on_settings_button_clicked)
+        
+        if self.clock_button is not None:
+            self.clock_button.connect("clicked", self._on_clock_button_clicked)
+
+        if self.clock_exit_button is not None:
+            self.clock_exit_button.connect("clicked", self._on_clock_exit_button_clicked)
+
         self.add_window(win)
 
         #win.fullscreen()
@@ -281,12 +343,6 @@ class Launcher(Gtk.Application):
         self.stack.connect("notify::visible-child", self._on_page_changed)
 
         self._update_clock()
-        ######################################################
-
-            
-        #self._update_volume_icon(50)      # example values
-        #self._update_wifi_icon(3)         # example values
-        ######################################################
         GLib.timeout_add_seconds(1, self._update_clock)
         GLib.timeout_add_seconds(1, self._update_battery_val)
         GLib.timeout_add_seconds(1, self._update_volume_val)  # example values
@@ -480,7 +536,55 @@ class Launcher(Gtk.Application):
         for i, child in enumerate(self.pager_box.get_children()):
             if isinstance(child, Gtk.Button):
                 child.set_label("●" if i == idx else "○")
+    def goto_next_content_page(self):
+        children = self.content_stack.get_children()
+        if not children:
+            return
+        current = self.content_stack.get_visible_child()
+        try:
+            idx = children.index(current)
+        except ValueError:
+            return 
+        next_idx = (idx + 1) % len(children)
+        print(children[next_idx])
+        self.content_stack.set_visible_child(children[next_idx])
+    
+    def _on_nav_icon_1_clicked(self, _widget, _event):
+        self.goto_next_content_page()
+        # SWAP TO: 
+        # self.content_stack.set_visible_child_name("home_page")
+        return True
+    
 
+    """
+    def _on_nav_icon_2_clicked(self, _widget, _event):
+        self.content_stack.set_visible_child_name("status_page")    
+    
+    def _on_nav_icon_3_clicked(self, _widget, _event):
+        self.content_stack.set_visible_child_name("app_stack")
+    
+    """
 
+            
+    def _on_status_button_clicked(self, button):
+        print("Status button clicked")
+        self.content_stack.set_visible_child_name("status_page")
+
+    def _on_apps_button_clicked(self, button):
+        print("Apps button clicked")
+        self.content_stack.set_visible_child_name("app_stack")
+        
+    def _on_clock_button_clicked(self, button):
+        print("Clock button clicked")
+        self.shell_stack.set_visible_child_name("clock_fullscreen")
+
+    def _on_clock_exit_button_clicked(self, button):
+        print("Clock exit button clicked")
+        self.shell_stack.set_visible_child_name("main_shell")
+
+    def _on_settings_button_clicked(self, button):
+        print("Settings button clicked")
+        self.content_stack.set_visible_child_name("settings_page")
 if __name__ == "__main__":
+
     Launcher().run([])
