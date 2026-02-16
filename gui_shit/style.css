@@ -1,25 +1,96 @@
-#main_root {
-	background-image: url("/home/kips/Downloads/wp4615534-2698296615.jpg");
-	background-size: cover;
-	background-repeat: no-repeat;
+/* ============================================================
+   Global defaults
+   ============================================================ */
+
+* {
+    font-family: "Sans";
+    font-size: 14px;
+    color: #000000;
+
 }
 
 
-#nav_bar {
-    background-color: red;
+/* ============================================================
+   Window-level modes (optional, future-proof)
+   Add 'mobile' or 'desktop' to the main window style classes
+   ============================================================ */
+
+window.mobile {
+    background-color: #000000;
 }
 
-#status_bar {
-    background-color: black;
+window.desktop {
+    background-color: #121212;
 }
 
-#content_stack {
-    background-color: transparent;
+
+/* ============================================================
+   Clock / prominent labels
+   ============================================================ */
+
+.clock-app-label {
+    font-family: "Monospace";
+    font-size: 256px;
+    font-weight: bold;
+    color: #3481aa;
 }
 
-#appHolder {
-	background-color: black;
+
+/* ============================================================
+   Status bar text
+   ============================================================ */
+
+.status-text {
+    font-family: "Sans";
+    font-size: 14px;
 }
- #app_stack {
-	background-color:black;
- }
+
+
+/* ============================================================
+   Icons (GtkImage / symbolic icons / icon labels)
+   ============================================================ */
+
+.status-icon {
+    font-size: 16px;
+}
+
+
+/* ============================================================
+   Navigation buttons / app icons
+   ============================================================ */
+
+.nav-button {
+    font-size: 18px;
+    padding: 6px;
+}
+
+
+/* ============================================================
+   Containers
+   ============================================================ */
+
+.status-bar {
+    background-color: #1a1a1a;
+}
+
+.nav-bar {
+    background-color: #0f0f0f;
+}
+
+.content-area {
+    background-color: #000000;
+}
+
+
+/* ============================================================
+   Buttons (optional baseline styling)
+   ============================================================ */
+
+button {
+    background-color: #ffffff;
+    border-radius: 6px;
+}
+
+button:hover {
+    background-color: #c5b8b8;
+}
