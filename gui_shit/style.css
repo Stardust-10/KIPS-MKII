@@ -17,17 +17,15 @@
 #main_window,
 #main_window > *
 {
-	background-color: #002f00 ; 
+	background-color: #002f00; 
 	color: #00ee00;
-
 }
+
 .screen{
-/*background-color: #00ee00; */
-color: #00ee00;
- border-radius: 8px;
- padding: 10px;
+    /*background-color: #002f00;*/
+    color: #00ee00;
+    border-radius: 8px;
 }
-
 
 window.mobile {
     background-color: #000000;
@@ -103,6 +101,7 @@ window.desktop {
    ============================================================ */
 
 button {
+    background-image: none;
     background-color: #005f00;
     border-radius: 6px;
 }
