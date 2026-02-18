@@ -1,5 +1,7 @@
 from datetime import datetime
 from gi.repository import Gtk, Gdk, GLib
+import gi
+gi.require_version('Gtk', '3.0')
 import os
 import subprocess
 from gi.repository import Gio
@@ -246,7 +248,7 @@ class Launcher(Gtk.Application):
         self.temp_label = self.builder.get_object("temp_label")
         self.humidity_label = self.builder.get_object("humidity")
         self.nav_bar = self.builder.get_object("nav_bar")
-        self.nav_icon_1_eb = self.builder.get_object("nav_icon_1_eb")
+        self.home_icon_eb = self.builder.get_object("home_icon_eb")
         self.status_button = self.builder.get_object("status_button")
         self.apps_button = self.builder.get_object("apps_button")
         self.clock_button = self.builder.get_object("clock_button")
@@ -255,9 +257,9 @@ class Launcher(Gtk.Application):
         self.clock_app_label = self.builder.get_object("clock_app_label")
         self.settings_button = self.builder.get_object("settings_button")
 
-        if self.nav_icon_1_eb is not None:
-            self.nav_icon_1_eb.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
-            self.nav_icon_1_eb.connect("button-press-event", self._on_nav_icon_1_clicked)
+        if self.home_icon_eb is not None:
+            self.home_icon_eb.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+            self.home_icon_eb.connect("button-press-event", self._on_home_icon_clicked)
 
         if self.status_button is not None:
             self.status_button.connect("clicked", self._on_status_button_clicked)
@@ -549,10 +551,9 @@ class Launcher(Gtk.Application):
         print(children[next_idx])
         self.content_stack.set_visible_child(children[next_idx])
     
-    def _on_nav_icon_1_clicked(self, _widget, _event):
-        self.goto_next_content_page()
+    def _on_home_icon_clicked(self, _widget, _event):
         # SWAP TO: 
-        # self.content_stack.set_visible_child_name("home_page")
+        self.content_stack.set_visible_child_name("home_stack")
         return True
     
 
@@ -562,7 +563,6 @@ class Launcher(Gtk.Application):
     
     def _on_nav_icon_3_clicked(self, _widget, _event):
         self.content_stack.set_visible_child_name("app_stack")
-    
     """
 
             
