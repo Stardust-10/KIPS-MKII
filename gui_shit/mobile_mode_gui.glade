@@ -3,6 +3,7 @@
 <interface>
   <requires lib="gtk+" version="3.24"/>
   <object class="GtkWindow" id="main_window">
+    <property name="name">main_window</property>
     <property name="can-focus">False</property>
     <property name="hexpand">True</property>
     <property name="vexpand">True</property>
@@ -15,25 +16,23 @@
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
-              <object class="GtkBox" id="nav_bar">
+              <object class="GtkBox" id="nav_parent">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="halign">end</property>
-                <property name="valign">center</property>
-                <property name="margin-bottom">380</property>
                 <property name="orientation">vertical</property>
-                <property name="baseline-position">top</property>
                 <child>
-                  <object class="GtkEventBox" id="nav_icon_1_eb">
+                  <object class="GtkEventBox" id="home_icon_eb">
+                    <property name="name">home_icon_eb</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <child>
-                      <object class="GtkImage" id="nav_icon1">
+                      <object class="GtkImage" id="home_icon">
+                        <property name="name">home_icon</property>
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="xpad">12</property>
                         <property name="ypad">12</property>
-                        <property name="icon-name">applications-games</property>
+                        <property name="icon-name">go-home</property>
                       </object>
                     </child>
                   </object>
@@ -44,43 +43,61 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEventBox" id="nav_icon_2_eb">
+                  <object class="GtkBox" id="nav_bar">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="halign">end</property>
+                    <property name="valign">center</property>
+                    <property name="margin-bottom">380</property>
+                    <property name="orientation">vertical</property>
+                    <property name="baseline-position">top</property>
                     <child>
-                      <object class="GtkImage" id="nav_icon2">
+                      <object class="GtkEventBox" id="nav_icon_1_eb">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="xpad">12</property>
-                        <property name="ypad">12</property>
-                        <property name="icon-name">utilities-terminal</property>
+                        <child>
+                          <placeholder/>
+                        </child>
                       </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkEventBox" id="nav_icon_2_eb">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkEventBox" id="nav_icon_3_eb">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">2</property>
+                      </packing>
                     </child>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkEventBox" id="nav_icon_3_eb">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <child>
-                      <object class="GtkImage" id="nav_icon3">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="xpad">8</property>
-                        <property name="ypad">8</property>
-                        <property name="icon-name">applications-engineering</property>
-                      </object>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
                   </packing>
                 </child>
               </object>
@@ -175,12 +192,12 @@
                                 <property name="width-request">100</property>
                                 <property name="height-request">80</property>
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
+                                <property name="can-focus">False</property>
                                 <child>
                                   <object class="GtkButton" id="status_button">
                                     <property name="label" translatable="yes">Stats</property>
                                     <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
+                                    <property name="can-focus">False</property>
                                     <property name="receives-default">True</property>
                                   </object>
                                 </child>
@@ -191,12 +208,12 @@
                                 <property name="width-request">100</property>
                                 <property name="height-request">80</property>
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
+                                <property name="can-focus">False</property>
                                 <child>
                                   <object class="GtkButton" id="apps_button">
                                     <property name="label" translatable="yes">Apps</property>
                                     <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
+                                    <property name="can-focus">False</property>
                                     <property name="receives-default">True</property>
                                   </object>
                                 </child>
@@ -207,12 +224,12 @@
                                 <property name="width-request">100</property>
                                 <property name="height-request">80</property>
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
+                                <property name="can-focus">False</property>
                                 <child>
                                   <object class="GtkButton" id="settings_button">
                                     <property name="label" translatable="yes">Settings</property>
                                     <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
+                                    <property name="can-focus">False</property>
                                     <property name="receives-default">True</property>
                                   </object>
                                 </child>
@@ -223,12 +240,12 @@
                                 <property name="width-request">100</property>
                                 <property name="height-request">80</property>
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
+                                <property name="can-focus">False</property>
                                 <child>
                                   <object class="GtkButton" id="radio_button">
                                     <property name="label" translatable="yes">Radio</property>
                                     <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
+                                    <property name="can-focus">False</property>
                                     <property name="receives-default">True</property>
                                   </object>
                                 </child>
@@ -239,17 +256,20 @@
                                 <property name="width-request">100</property>
                                 <property name="height-request">80</property>
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
+                                <property name="can-focus">False</property>
                                 <child>
                                   <object class="GtkButton" id="clock_button">
                                     <property name="label" translatable="yes">Clock</property>
                                     <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
+                                    <property name="can-focus">False</property>
                                     <property name="receives-default">True</property>
                                   </object>
                                 </child>
                               </object>
                             </child>
+                            <style>
+                              <class name="screen"/>
+                            </style>
                           </object>
                           <packing>
                             <property name="name">page0</property>
@@ -1634,5 +1654,8 @@
         </child>
       </object>
     </child>
+    <style>
+      <class name="screen"/>
+    </style>
   </object>
 </interface>
