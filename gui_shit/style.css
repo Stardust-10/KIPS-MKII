@@ -5,7 +5,7 @@
 * {
     font-family: "Sans";
     font-size: 14px;
-    color: #000000;
+    	color: #00ee00;
 
 }
 
@@ -14,13 +14,29 @@
    Window-level modes (optional, future-proof)
    Add 'mobile' or 'desktop' to the main window style classes
    ============================================================ */
+#main_window,
+#main_window > *
+{
+	background-color: #002f00 ; 
+	color: #00ee00;
+
+}
+.screen{
+/*background-color: #00ee00; */
+color: #00ee00;
+ border-radius: 8px;
+ padding: 10px;
+}
+
 
 window.mobile {
     background-color: #000000;
+    	color: #00ee00;
 }
 
 window.desktop {
     background-color: #121212;
+    	color: #00ee00;
 }
 
 
@@ -87,10 +103,10 @@ window.desktop {
    ============================================================ */
 
 button {
-    background-color: #ffffff;
+    background-color: #005f00;
     border-radius: 6px;
 }
 
 button:hover {
-    background-color: #c5b8b8;
+    background-color: #008e00;
 }
