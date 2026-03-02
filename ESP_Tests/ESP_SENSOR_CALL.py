@@ -49,4 +49,3 @@ if __name__ == "__main__":
 		args.lux,
 		args.hb
 	)
-
