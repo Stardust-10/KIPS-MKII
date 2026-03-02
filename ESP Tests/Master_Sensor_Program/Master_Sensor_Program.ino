@@ -22,7 +22,7 @@ Adafruit_AM2320 am2320 = Adafruit_AM2320();
 
 void setup() {
 
-  // USB Serial Monitor output setup
+  // USB Serial Monitor output setuhump
   Serial.begin(115200);
   delay(2000);
   Serial.println("Beginning ESP32-S3 UART + AM2320 test.");
