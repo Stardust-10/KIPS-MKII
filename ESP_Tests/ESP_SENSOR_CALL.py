@@ -3,37 +3,37 @@ import argparse
 
 ser = serial.Serial("/dev/serial0", 112500, timeout = 2)
 
-def call_data(tempHum, lux, hb):
+def call_data(tempHum, lux, hb, temp_internal):
 	
-	#If temp request is present, inquire to ESP
-	#If no request, temp val is set to none
+	# If temp request is present, inquire to ESP
 	if tempHum:
 		ser.write(b"1\n") #bytes literal
-		temp_val = ser.readline().decode(errors = "ignore").strip()
-		hum_val = ser.readline().decode(errors = "ignore").strip()
+		# expects two lines of data, first is temp, second is humidity
+		# values returned as TEMP:XX.XX and HUM:XX.XX
+		# strip off the leading text and return just the value
+		temp_val = ser.readline().decode(errors = "ignore").strip().split(":")[1]
+		hum_val = ser.readline().decode(errors = "ignore").strip().split(":")[1]
+		return temp_val, hum_val
 	
-	else:
-		temp_val: Any = None
-		hum_val: Any = None
-	
-	#If lux request is present, inquire to ESP
-	#If no request,lux is set to none
+	# If ldr request is present, inquire to ESP
 	if lux:
 		ser.write(b"2\n").encode
-		lux_val = ser.readline().decode(errors = "ignore").strip()
-	
-	else:
-		lux_val: Any = None
+		lux_val = ser.readline().decode(errors = "ignore").strip().split(":")[1]
+		return lux_val
 		
+	# If heartbeat request is present, inquire to ESP	
 	if hb:
 		ser.write(b"3\n")
-		hb_val = ser.readline().decode(errors = "ignore").strip()
+		hb_val = ser.readline().decode(errors = "ignore").strip().split(":")[1]
+		return hb_val
+	
+	# If internal temp request is present, inquire to ESP
+	if temp_internal:
+		ser.write(b"4\n")
+		temp_internal_val = ser.readline().decode(errors = "ignore").strip().split(":")[1]
+		return temp_internal_val
 		
-	else:
-		hb_val: None
-		
-	print(temp_val, hum_val, lux_val, hb_val)
-	return(temp_val, hum_val, lux_val, hb_val)
+	return None
 		
 
 if __name__ == "__main__":
@@ -41,11 +41,13 @@ if __name__ == "__main__":
 	parser.add_argument("--temphum", action = "store_true", help = "Reads temperature and humidity")
 	parser.add_argument("--lux", action = "store_true", help = "Reads light level")
 	parser.add_argument("--hb", action = "store_true", help = "Reads heartbeat value.")
+	parser.add_argument("--internaltemp", action = "store_true", help = "Reads internal temperature of KIPS")
 	
 	args = parser.parse_args()
 		
 	ret_vals = call_data(
 		args.temphum,
 		args.lux,
-		args.hb
+		args.hb,
+		args.internaltemp
 	)
