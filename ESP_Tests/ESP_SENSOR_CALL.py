@@ -13,24 +13,29 @@ def call_data(tempHum, lux, hb, temp_internal):
 		# strip off the leading text and return just the value
 		temp_val = ser.readline().decode(errors = "ignore").strip().split(":")[1]
 		hum_val = ser.readline().decode(errors = "ignore").strip().split(":")[1]
+		print(f"Temperature: {temp_val}")
+		print(f"Humidity: {hum_val}")
 		return temp_val, hum_val
 	
 	# If ldr request is present, inquire to ESP
 	if lux:
-		ser.write(b"2\n").encode
+		ser.write(b"2\n")
 		lux_val = ser.readline().decode(errors = "ignore").strip().split(":")[1]
+		print(f"Brightness:{lux_val}")
 		return lux_val
 		
 	# If heartbeat request is present, inquire to ESP	
 	if hb:
 		ser.write(b"3\n")
 		hb_val = ser.readline().decode(errors = "ignore").strip().split(":")[1]
+		print(f"Heartbeat Measurement: {hb_val}")
 		return hb_val
 	
 	# If internal temp request is present, inquire to ESP
 	if temp_internal:
 		ser.write(b"4\n")
 		temp_internal_val = ser.readline().decode(errors = "ignore").strip().split(":")[1]
+		print(f"Internal Temperature: {temp_internal_val}")
 		return temp_internal_val
 		
 	return None
