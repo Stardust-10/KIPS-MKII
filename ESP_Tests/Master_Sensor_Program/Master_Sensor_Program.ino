@@ -11,7 +11,7 @@
 HardwareSerial SerialUART32_0(0); // UART0
 HardwareSerial SerialUART32_1(1); // UART1
 
-const int ldrPin = 4;
+const int ldrPin = 5;
 
 #define UART_TX_PIN 43
 #define UART_RX_PIN 44
@@ -81,28 +81,27 @@ void loop() {
       Serial.print("Temp: "); Serial.println(temp);
       Serial.print("Hum: "); Serial.println(hum);
 
-       delay(2000);
+      delay(2000);
     }
 
     //If integer 2 is recieved from CM4
     //Sends back LDR value (LUX)
-    if(command == 2) {
+    else if(command == 2) {
       
       int ldr = analogRead(ldrPin);
       
       //Print to UART first
       SerialUART32_0.print("LDR: ");
-      SerialUART32_0.print(ldr);
+      SerialUART32_0.println(ldr);
 
       //Then serial monitor
-      Serial.println("LDR data sent once.");
-      Serial.println(ldr);
+      Serial.print("LDR: "); Serial.println(ldr);
 
       delay(2000);
     }
 
     //For heartbeat monitor
-    if (command == 3) {
+    else if (command == 3) {
 
     }
     

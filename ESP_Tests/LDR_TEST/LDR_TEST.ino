@@ -1,15 +1,19 @@
 #include <Arduino.h>
 
 // Define the pin where the LDR is connected (e.g., GPIO 34)
-const int ldrPin = 4; 
+const int ldrPin = 5; 
 
 void setup() {
 
   // Initialize serial communication at a baud rate of 115200
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   // Set the pin mode (though analogRead works without explicit pinMode for ADC pins)
   pinMode(ldrPin, INPUT);
+
+  delay(1000);
+
+  Serial.println("Beginning LDR Test...");
 }
 
 void loop() {
