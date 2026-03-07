@@ -11,8 +11,8 @@ from dataclasses import dataclass
 
 screen = Gdk.Screen.get_default()
 provider = Gtk.CssProvider()
-provider.load_from_path("/home/kips/Desktop/kips_files/gui_shit/style.css")
-#provider.load_from_path("C:\\msys64\\home\\jljme\\styles.css")
+#provider.load_from_path("/home/kips/Desktop/kips_files/gui_shit/style.css")
+provider.load_from_path("C:\\msys64\\home\\jljme\\styles.css")
 Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 #os.path.dirname(os.path.abspath(__file__))
@@ -48,6 +48,7 @@ else
 self.content_stack.set_visible_child_name(app.stack_name)
 """
 
+
 class Launcher(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.example.Launcher")
@@ -60,6 +61,52 @@ class Launcher(Gtk.Application):
         self.humidity_label = None
         self.nav_bar = None
         self.apps = []  # list of dicts: {"name": "Calculator", "icon": "accessories-calculator"}
+        self.open_apps = []
+
+    test_app = AppEntry(
+        app_id="test_app",
+        title="Test App",
+        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
+        stack_name="app_stack"
+    )
+
+    test_app1 = AppEntry(
+        app_id="test_app1",
+        title="Test App 1",
+        icon_path="C:\\msys64\\home\\jljme\\mineswept.png",
+        stack_name="status_page"
+    )
+
+    open_apps = [test_app, test_app1]
+
+    status_app = AppEntry(
+        app_id="status_app",
+        title="Status",
+        icon_path="C:\\msys64\\home\\jljme\\test.png",
+        stack_name="status_page"
+    )
+
+    apps_app = AppEntry(
+        app_id="apps_app",
+        title="Apps",
+        icon_path="C:\\msys64\\home\\jljme\\calculator_128x128.png",
+        stack_name="app_stack"
+    )
+
+    clock_app = AppEntry(
+        app_id="clock_app",
+        title="Clock",
+        icon_path="C:\\msys64\\home\\jljme\\mineswept.png",
+        stack_name="clock_fullscreen"
+    )
+
+    settings_app = AppEntry(
+        app_id="settings_app",
+        title="Settings",
+        icon_path="C:\\msys64\\home\\jljme\\calculator_128x128.png",
+        stack_name="settings_page"
+    )
+
 
     def _set_image_scaled(self, image_widget, file_path, size_px=28):
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
@@ -224,6 +271,7 @@ class Launcher(Gtk.Application):
         self.stack.set_visible_child_name("page-0")
 
         self._rebuild_dots(len(chunks))
+        self._rebuild_nav_bar(len(chunks))
         self.stack.show_all()
 
     def do_activate(self):
@@ -262,19 +310,19 @@ class Launcher(Gtk.Application):
             self.home_icon_eb.connect("button-press-event", self._on_home_icon_clicked)
 
         if self.status_button is not None:
-            self.status_button.connect("clicked", self._on_status_button_clicked)
+            self.status_button.connect("clicked", self._on_app_icon_clicked, self.status_app)
         
         if self.apps_button is not None:
-            self.apps_button.connect("clicked", self._on_apps_button_clicked)
+            self.apps_button.connect("clicked", self._on_app_icon_clicked, self.apps_app)  # example, replace with actual app entry
 
         if self.settings_button is not None:
-            self.settings_button.connect("clicked", self._on_settings_button_clicked)
+            self.settings_button.connect("clicked", self._on_app_icon_clicked, self.settings_app) 
         
         if self.clock_button is not None:
-            self.clock_button.connect("clicked", self._on_clock_button_clicked)
+            self.clock_button.connect("clicked", self._on_clock_button_clicked)  
 
         if self.clock_exit_button is not None:
-            self.clock_exit_button.connect("clicked", self._on_clock_exit_button_clicked)
+            self.clock_exit_button.connect("clicked", self._on_clock_exit_button_clicked)  # example, replace with actual app entry
 
         self.add_window(win)
 
@@ -439,6 +487,7 @@ class Launcher(Gtk.Application):
         self.stack.set_visible_child_name("page-0")
 
         self._rebuild_dots(len(chunks))
+        self._rebuild_nav_bar(len(chunks))
         self.stack.show_all()
 
     def _make_page(self, app_chunk):
@@ -538,6 +587,111 @@ class Launcher(Gtk.Application):
         for i, child in enumerate(self.pager_box.get_children()):
             if isinstance(child, Gtk.Button):
                 child.set_label("●" if i == idx else "○")
+    ##################################################################################
+    # ---------- D. Nav_Bar ----------
+    
+    def _unique_open_apps(self):
+        """Return open apps with duplicates removed, preserving first-seen order."""
+        seen = set()
+        unique = []
+        for app in self.open_apps:
+            if app.app_id in seen:
+                continue
+            seen.add(app.app_id)
+            unique.append(app)
+        return unique
+    
+    def _make_nav_widget_for_app(self, app_entry):
+        """
+        Creates the nav widget ONCE and stores it in app_entry.nav_widget.
+        For now: dot button.
+        Later: swap the label for an image (icon_path) without changing callers.
+        """
+        if app_entry.nav_widget is not None:
+            return app_entry.nav_widget
+
+        btn = Gtk.Button()
+        btn.set_relief(Gtk.ReliefStyle.NONE)
+        btn.set_focus_on_click(False)
+        btn.set_can_focus(False)
+        btn.set_margin_left(3)
+        btn.set_margin_right(3)
+
+        # ---- CURRENT BEHAVIOR: dot ----
+        # btn.set_label("●")  # label will be updated by _refresh_nav_active_state()
+
+        # ---- LATER UPGRADE: icon/image ----
+        # Uncomment this when you're ready to switch from dot -> image:
+        if app_entry.icon_path and os.path.isfile(app_entry.icon_path):
+            img = Gtk.Image.new_from_file(app_entry.icon_path)
+        else:
+            img = Gtk.Image.new_from_icon_name("application-x-executable", Gtk.IconSize.DND)
+        btn.set_label("")     # remove dot
+        btn.add(img)          # show icon
+        btn.show_all()
+
+        btn.get_style_context().add_class("nav-icon")
+
+        # IMPORTANT: your file has an _on_nav_icon_clicked that takes (widget,event,app_entry)
+        btn.connect("button-press-event", self._on_nav_icon_clicked, app_entry)
+
+        app_entry.nav_widget = btn
+        return btn
+
+    def _refresh_nav_active_state(self):
+        """Applies active/inactive styling (and dot fill) based on current stack page."""
+        current = self.content_stack.get_visible_child_name()
+
+        for app in self._unique_open_apps():
+            w = app.nav_widget
+            if not w:
+                continue
+
+            is_active = (app.stack_name == current)
+            ctx = w.get_style_context()
+
+            # Dot mode: filled dot for active, empty for inactive
+            if w.get_label() is not None and w.get_label() != "":
+                w.set_label("●" if is_active else "○")
+
+            if is_active:
+                ctx.add_class("nav-icon-active")
+            else:
+                ctx.remove_class("nav-icon-active")
+
+    def _rebuild_nav_bar(self, *_):
+        # Clear nav_bar
+        for child in list(self.nav_bar.get_children()):
+            self.nav_bar.remove(child)
+
+        # Rebuild exactly one nav widget per app
+        for app in self._unique_open_apps():
+            w = self._make_nav_widget_for_app(app)
+            self.nav_bar.pack_start(w, False, False, 3)
+
+        self.nav_bar.show_all()
+        self._refresh_nav_active_state()
+
+    def _on_nav_icon_clicked(self, _widget, _event, app_entry):
+        self.content_stack.set_visible_child_name(app_entry.stack_name)
+        children = self.content_stack.get_children()
+        if not children: 
+            return
+        for child in children:
+            if child.get_name() == app_entry.stack_name:
+                self.content_stack.set_visible_child(child)
+                break
+        
+        self._on_nav_page_changed(1)
+
+    def _on_nav_page_changed(self, *_):
+        idx = self._current_index()
+        for i, child in enumerate(self.nav_bar.get_children()):
+            if isinstance(child, Gtk.Button):
+                child.set_label("●" if i == idx else "○")
+    
+    ###############################################################################
+
     def goto_next_content_page(self):
         children = self.content_stack.get_children()
         if not children:
@@ -565,10 +719,26 @@ class Launcher(Gtk.Application):
         self.content_stack.set_visible_child_name("app_stack")
     """
 
-            
+    ##########################################################################
+    '''def _on_nav_icon_clicked(self, _widget, _event, app_entry):'''
+
+
+
+
+    def _on_app_icon_clicked(self, button, app_entry):
+        print("Main icon clicked")
+        self.open_apps.append(app_entry)
+        self._rebuild_nav_bar(len(self.open_apps))
+        self.content_stack.set_visible_child_name(f"{app_entry.stack_name}")
+    ##########################################################################
+
+
     def _on_status_button_clicked(self, button):
         print("Status button clicked")
-        self.content_stack.set_visible_child_name("status_page")
+
+
+        self.connect("button-press-event", self._on_nav_icon_clicked, self.status_app)
+        self.content_stack.set_visible_child_name("status_stack")
 
     def _on_apps_button_clicked(self, button):
         print("Apps button clicked")
