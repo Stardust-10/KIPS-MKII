@@ -15,10 +15,13 @@
    Add 'mobile' or 'desktop' to the main window style classes
    ============================================================ */
 #main_window,
-#main_window > *
+#main_window 
 {
-	background-color: #002f00; 
-	color: #00ee00;
+	background-color: #002f00;
+    /*background-image : url("/home/kips/Downloads/wp4615534-2698296615.jpg"); */
+    background-repeat: no-repeat; 
+    background-position: center; 
+    background-size: cover; 
 }
 
 .screen{
@@ -108,4 +111,16 @@ button {
 
 button:hover {
     background-color: #008e00;
+}
+
+.settings-buttoncolor{
+
+border-radius: 6px;
+
+}
+
+.settings-buttoncolor:hover{
+
+background-color: shade(@theme_selected_bg_color,1.1);
+
 }
