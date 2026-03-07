@@ -11,8 +11,8 @@ from dataclasses import dataclass
 
 screen = Gdk.Screen.get_default()
 provider = Gtk.CssProvider()
-#provider.load_from_path("/home/kips/Desktop/kips_files/gui_shit/style.css")
-provider.load_from_path("C:\\msys64\\home\\jljme\\styles.css")
+provider.load_from_path("/home/kips/Desktop/kips_files/gui_shit/style.css")
+#provider.load_from_path("C:\\msys64\\home\\jljme\\styles.css")
 Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 #os.path.dirname(os.path.abspath(__file__))
