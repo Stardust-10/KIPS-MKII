@@ -1,18 +1,21 @@
-from datetime import datetime
-from gi.repository import Gtk, Gdk, GLib
 import gi
-gi.require_version('Gtk', '3.0')
+gi.require_version('Gtk', '3.0') 
+from datetime import datetime
+from gi.repository import Gtk, Gdk, GLib, Pango
+
+import re
 import os
 import subprocess
 from gi.repository import Gio
 from gi.repository import GdkPixbuf
 import subprocess
 from dataclasses import dataclass
+from esp_sensor_call import call_data
 
 screen = Gdk.Screen.get_default()
 provider = Gtk.CssProvider()
-provider.load_from_path("/home/kips/Desktop/kips_files/gui_shit/style.css")
-#provider.load_from_path("C:\\msys64\\home\\jljme\\styles.css")
+#provider.load_from_path("/home/kips/Desktop/kips_files/gui_shit/style.css")
+provider.load_from_path("C:\\msys64\\home\\jljme\\styles.css")
 Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 #os.path.dirname(os.path.abspath(__file__))
@@ -24,6 +27,10 @@ value = 1
 wifi_val = 0
 vol_value = 0
 
+css_file = "/home/kips/Desktop/kips_files/gui_shit/style.css,"
+dynamic_provider = Gtk.CssProvider()
+
+
 @dataclass
 class AppEntry:
     app_id: str                         # e.g. "calc_app"
@@ -34,6 +41,7 @@ class AppEntry:
     is_open: bool = False               # Is the page open?
     #content_page: Gtk.Widget = None    
     nav_widget: Gtk.Widget = None       # Where the created icon is stored
+    
 
 """
 App Launcher logic:
@@ -48,8 +56,8 @@ else
 self.content_stack.set_visible_child_name(app.stack_name)
 """
 
-
 class Launcher(Gtk.Application):
+
     def __init__(self):
         super().__init__(application_id="com.example.Launcher")
         self.builder = None
@@ -73,7 +81,7 @@ class Launcher(Gtk.Application):
     test_app1 = AppEntry(
         app_id="test_app1",
         title="Test App 1",
-        icon_path="C:\\msys64\\home\\jljme\\mineswept.png",
+        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
         stack_name="status_page"
     )
 
@@ -82,30 +90,46 @@ class Launcher(Gtk.Application):
     status_app = AppEntry(
         app_id="status_app",
         title="Status",
-        icon_path="C:\\msys64\\home\\jljme\\test.png",
+        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
         stack_name="status_page"
     )
 
     apps_app = AppEntry(
         app_id="apps_app",
         title="Apps",
-        icon_path="C:\\msys64\\home\\jljme\\calculator_128x128.png",
+        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
         stack_name="app_stack"
     )
 
     clock_app = AppEntry(
         app_id="clock_app",
         title="Clock",
-        icon_path="C:\\msys64\\home\\jljme\\mineswept.png",
+        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
         stack_name="clock_fullscreen"
     )
 
     settings_app = AppEntry(
         app_id="settings_app",
         title="Settings",
-        icon_path="C:\\msys64\\home\\jljme\\calculator_128x128.png",
+        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
         stack_name="settings_page"
     )
+
+    radio_app = AppEntry(
+        app_id="radio_app",
+        title="Radio",
+        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
+        stack_name="radio_page"
+    )
+
+    def set_scaled_image(self, image_widget, file_path, width, height):
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+            file_path,
+            width=width,
+            height=height,
+            preserve_aspect_ratio=True
+        )
+        image_widget.set_from_pixbuf(pixbuf)
 
 
     def _set_image_scaled(self, image_widget, file_path, size_px=28):
@@ -144,7 +168,7 @@ class Launcher(Gtk.Application):
                 name = full_str.strip().split("\t")[1].strip().split(": ")[1]
                 print(f'Name: {name}')
                 return strength, name
-            print(f'Strength: {strength}')
+            #print(f'Strength: {strength}')
             return int(strength)
         
         
@@ -171,7 +195,7 @@ class Launcher(Gtk.Application):
                 check=True
             )
             
-            print(vol.stdout.strip().split("/")[1].strip().replace("%", ""))
+            #print(vol.stdout.strip().split("/")[1].strip().replace("%", ""))
             #return vol.stdout
             return int(vol.stdout.strip().split("/")[1].strip().replace("%", ""))
         
@@ -287,14 +311,18 @@ class Launcher(Gtk.Application):
         win = self.builder.get_object("main_window") or self._first_of_type(Gtk.Window)
         self.window = win
         self.content_stack = self.builder.get_object("content_stack")
-        self.stack = self.builder.get_object("app_stack") or self._first_of_type(Gtk.Stack)
+        self.stack = self.builder.get_object("appStack") or self._first_of_type(Gtk.Stack)
         self.pager_box = self.builder.get_object("pager_box") or self._ensure_pager_box()
         self.clock_label = self.builder.get_object("clock_label")
         self.battery_icon = self.builder.get_object("battery_icon")
         self.wifi_icon = self.builder.get_object("wifi_icon")
         self.volume_icon = self.builder.get_object("volume_icon")
         self.temp_label = self.builder.get_object("temp_label")
+        self.temp_output_stack = self.builder.get_object("temp_output_stack")
         self.humidity_label = self.builder.get_object("humidity")
+        self.humidity_output_stack = self.builder.get_object("humidity_output_stack")
+        self.brightness_label = self.builder.get_object("brightness_label")
+        self.brightness_output_stack = self.builder.get_object("brightness_output_stack")
         self.nav_bar = self.builder.get_object("nav_bar")
         self.home_icon_eb = self.builder.get_object("home_icon_eb")
         self.status_button = self.builder.get_object("status_button")
@@ -304,6 +332,26 @@ class Launcher(Gtk.Application):
         self.clock_exit_button = self.builder.get_object("clock_exit_button")
         self.clock_app_label = self.builder.get_object("clock_app_label")
         self.settings_button = self.builder.get_object("settings_button")
+        self.radio_button = self.builder.get_object("radio_button")
+        
+
+
+        self.button = self.builder.get_object("Color")
+        self.button.connect("color-set", self.on_color_chosen)
+        
+        self.brightness = self.builder.get_object("brightness")
+        self.background_image = self.builder.get_object("background_image")
+        self.background_image.connect("file-set", self.on_background_file)
+        self.font = self.builder.get_object("Font")
+        self.font.connect("font-set", self.on_font)
+       
+        self.dial_face_image = self.builder.get_object("dial_face_image")
+        self.set_scaled_image(
+            self.dial_face_image,
+            os.path.join(self.BASE_DIR, "radio_dial.png"),
+            800,   # try values around your page width
+            300
+        )
 
         if self.home_icon_eb is not None:
             self.home_icon_eb.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
@@ -318,11 +366,16 @@ class Launcher(Gtk.Application):
         if self.settings_button is not None:
             self.settings_button.connect("clicked", self._on_app_icon_clicked, self.settings_app) 
         
+        if self.radio_button is not None:
+            self.radio_button.connect("clicked", self._on_app_icon_clicked, self.radio_app)
+        
         if self.clock_button is not None:
             self.clock_button.connect("clicked", self._on_clock_button_clicked)  
 
         if self.clock_exit_button is not None:
             self.clock_exit_button.connect("clicked", self._on_clock_exit_button_clicked)  # example, replace with actual app entry
+        
+        self._update_status_page()
 
         self.add_window(win)
 
@@ -393,10 +446,13 @@ class Launcher(Gtk.Application):
         self.stack.connect("notify::visible-child", self._on_page_changed)
 
         self._update_clock()
+     
         GLib.timeout_add_seconds(1, self._update_clock)
         GLib.timeout_add_seconds(1, self._update_battery_val)
         GLib.timeout_add_seconds(1, self._update_volume_val)  # example values
         GLib.timeout_add_seconds(1, self._update_wifi_val)  # example values
+
+
 
         win.set_application(self)
         win.show_all()
@@ -440,6 +496,8 @@ class Launcher(Gtk.Application):
             self.goto_next_page()
         elif vel_x > 0:
             self.goto_prev_page()
+
+
 
     def goto_next_page(self):
         children = self.stack.get_children()
@@ -587,6 +645,7 @@ class Launcher(Gtk.Application):
         for i, child in enumerate(self.pager_box.get_children()):
             if isinstance(child, Gtk.Button):
                 child.set_label("●" if i == idx else "○")
+                
     ##################################################################################
     # ---------- D. Nav_Bar ----------
     
@@ -686,12 +745,12 @@ class Launcher(Gtk.Application):
 
     def _on_nav_page_changed(self, *_):
         idx = self._current_index()
-        for i, child in enumerate(self.nav_bar.get_children()):
-            if isinstance(child, Gtk.Button):
-                child.set_label("●" if i == idx else "○")
+        #for i, child in enumerate(self.nav_bar.get_children()):
+        #    if isinstance(child, Gtk.Button):
+        #        child.set_label("●" if i == idx else "○")
     
-    ###############################################################################
-
+    ###############################################################################                
+                
     def goto_next_content_page(self):
         children = self.content_stack.get_children()
         if not children:
@@ -709,7 +768,11 @@ class Launcher(Gtk.Application):
         # SWAP TO: 
         self.content_stack.set_visible_child_name("home_stack")
         return True
-    
+   
+    def on_color_changed(widget):
+        rgba = widget.get_rgba()
+        print("Live color:", regba.to_string())
+   
 
     """
     def _on_nav_icon_2_clicked(self, _widget, _event):
@@ -719,24 +782,15 @@ class Launcher(Gtk.Application):
         self.content_stack.set_visible_child_name("app_stack")
     """
 
-    ##########################################################################
-    '''def _on_nav_icon_clicked(self, _widget, _event, app_entry):'''
-
-
-
-
     def _on_app_icon_clicked(self, button, app_entry):
         print("Main icon clicked")
         self.open_apps.append(app_entry)
         self._rebuild_nav_bar(len(self.open_apps))
         self.content_stack.set_visible_child_name(f"{app_entry.stack_name}")
-    ##########################################################################
 
-
+            
     def _on_status_button_clicked(self, button):
         print("Status button clicked")
-
-
         self.connect("button-press-event", self._on_nav_icon_clicked, self.status_app)
         self.content_stack.set_visible_child_name("status_stack")
 
@@ -755,6 +809,120 @@ class Launcher(Gtk.Application):
     def _on_settings_button_clicked(self, button):
         print("Settings button clicked")
         self.content_stack.set_visible_child_name("settings_page")
+        
+    def _update_status_page(self):
+        # TODO hook into actual sensors
+        try:
+            temp, hum = call_data(True, False, False, False)
+            self.temp_label.set_text(f"{temp}°F")
+            self.humidity_label.set_text(f"{hum}%")
+            self.temp_output_stack.set_visible_child_name("temp_label")
+            self.humidity_output_stack.set_visible_child_name("humidity_label")
+        except Exception as e:
+            print("Error calling sensor data:", e)
+            temp, hum = "Loading...", "Loading..."  # fallback values
+            self.temp_output_stack.set_visible_child_name("temp_spinner")
+            self.humidity_output_stack.set_visible_child_name("humidity_spinner")
+            self.temp_label.set_text(temp)
+            self.humidity_label.set_text(hum)
+
+        try:
+            brightness = call_data(False, True, False, False)
+            self.brightness_label.set_text(f"{brightness}%")            
+            self.brightness_output_stack.set_visible_child_name("brightness_label")
+        except Exception as e:
+            print("Error calling brightness data:", e)
+            brightness = "Loading..."
+            self.brightness_output_stack.set_visible_child_name("brightness_spinner")
+            self.brightness_label.set_text(brightness)
+
+    def on_button_clicked(self,widget):
+        print("Color Settings button clicked")
+        self.popover.popup()
+        
+    def on_color_chosen(self,widget):
+       
+        rgba = widget.get_rgba()
+        
+        hex_color = "#{:02x}{:02x}{:02x}".format(
+        int(rgba.red*255),
+        int(rgba.green*255),
+        int(rgba.blue*255)
+        
+        
+        )
+        
+        
+        print("Selected HEX", hex_color)
+        
+        #color_str = f"rgb({red}, {green}, {blue})"
+        
+        css = f"""
+        #main_window
+            {{
+                    background-image : none;
+                    background-color: {hex_color};
+                
+            
+        }}
+        """
+        dynamic_provider.load_from_data(css.encode())
+
+    def on_font(self,widget):
+       
+        fontupdate = widget.get_font()
+        desc = Pango.FontDescription.from_string(fontupdate)
+        
+        family = desc.get_family()
+        size = int(desc.get_size()/ Pango.SCALE)
+        weight = int(desc.get_weight())
+        style = "italic" if desc.get_style() == Pango.Style.ITALIC else "normal"
+
+        
+        #font-style: {style};
+        #                    font-weight: {int(weight)};
+        
+        
+        
+        css = f"""
+        #main_window
+            {{
+                    
+                    font-family: "{family}";
+                    font-size: "{size}"px;
+                    
+                    
+                
+            
+        }}
+        """
+        data = css.encode("utf-8")
+        dynamic_provider.load_from_data(css.encode())
+
+    def on_background_file(self,widget):
+        filepath = widget.get_filename()
+        
+        if filepath:
+            css = f"""
+            #main_window
+            {{
+                    background-image : url('{filepath}');
+                    background-repeat: no-repeat; 
+                    background-position: center; 
+                    background-size: cover; 
+                
+            
+            }}
+            """
+        dynamic_provider.load_from_data(css.encode())
+    
+    Gtk.StyleContext.add_provider_for_screen(
+        Gdk.Screen.get_default(),
+        dynamic_provider,
+        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+    )
+    
 if __name__ == "__main__":
 
     Launcher().run([])
+    
