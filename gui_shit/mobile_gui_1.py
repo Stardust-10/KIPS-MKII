@@ -10,11 +10,12 @@ from gi.repository import Gio
 from gi.repository import GdkPixbuf
 import subprocess
 from dataclasses import dataclass
+from esp_sensor_call import call_data
 
 screen = Gdk.Screen.get_default()
 provider = Gtk.CssProvider()
-provider.load_from_path("/home/kips/Desktop/kips_files/gui_shit/style.css")
-#provider.load_from_path("C:\\msys64\\home\\jljme\\styles.css")
+#provider.load_from_path("/home/kips/Desktop/kips_files/gui_shit/style.css")
+provider.load_from_path("C:\\msys64\\home\\jljme\\styles.css")
 Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 #os.path.dirname(os.path.abspath(__file__))
@@ -121,7 +122,14 @@ class Launcher(Gtk.Application):
         stack_name="radio_page"
     )
 
-
+    def set_scaled_image(self, image_widget, file_path, width, height):
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+            file_path,
+            width=width,
+            height=height,
+            preserve_aspect_ratio=True
+        )
+        image_widget.set_from_pixbuf(pixbuf)
 
 
     def _set_image_scaled(self, image_widget, file_path, size_px=28):
@@ -310,7 +318,11 @@ class Launcher(Gtk.Application):
         self.wifi_icon = self.builder.get_object("wifi_icon")
         self.volume_icon = self.builder.get_object("volume_icon")
         self.temp_label = self.builder.get_object("temp_label")
+        self.temp_output_stack = self.builder.get_object("temp_output_stack")
         self.humidity_label = self.builder.get_object("humidity")
+        self.humidity_output_stack = self.builder.get_object("humidity_output_stack")
+        self.brightness_label = self.builder.get_object("brightness_label")
+        self.brightness_output_stack = self.builder.get_object("brightness_output_stack")
         self.nav_bar = self.builder.get_object("nav_bar")
         self.home_icon_eb = self.builder.get_object("home_icon_eb")
         self.status_button = self.builder.get_object("status_button")
@@ -321,8 +333,10 @@ class Launcher(Gtk.Application):
         self.clock_app_label = self.builder.get_object("clock_app_label")
         self.settings_button = self.builder.get_object("settings_button")
         self.radio_button = self.builder.get_object("radio_button")
-        self.button = self.builder.get_object("Color")
+        
 
+
+        self.button = self.builder.get_object("Color")
         self.button.connect("color-set", self.on_color_chosen)
         
         self.brightness = self.builder.get_object("brightness")
@@ -331,7 +345,13 @@ class Launcher(Gtk.Application):
         self.font = self.builder.get_object("Font")
         self.font.connect("font-set", self.on_font)
        
-       
+        self.dial_face_image = self.builder.get_object("dial_face_image")
+        self.set_scaled_image(
+            self.dial_face_image,
+            os.path.join(self.BASE_DIR, "radio_dial.png"),
+            800,   # try values around your page width
+            300
+        )
 
         if self.home_icon_eb is not None:
             self.home_icon_eb.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
@@ -355,6 +375,8 @@ class Launcher(Gtk.Application):
         if self.clock_exit_button is not None:
             self.clock_exit_button.connect("clicked", self._on_clock_exit_button_clicked)  # example, replace with actual app entry
         
+        self._update_status_page()
+
         self.add_window(win)
 
         #win.fullscreen()
@@ -429,6 +451,8 @@ class Launcher(Gtk.Application):
         GLib.timeout_add_seconds(1, self._update_battery_val)
         GLib.timeout_add_seconds(1, self._update_volume_val)  # example values
         GLib.timeout_add_seconds(1, self._update_wifi_val)  # example values
+
+
 
         win.set_application(self)
         win.show_all()
@@ -786,6 +810,32 @@ class Launcher(Gtk.Application):
         print("Settings button clicked")
         self.content_stack.set_visible_child_name("settings_page")
         
+    def _update_status_page(self):
+        # TODO hook into actual sensors
+        try:
+            temp, hum = call_data(True, False, False, False)
+            self.temp_label.set_text(f"{temp}°F")
+            self.humidity_label.set_text(f"{hum}%")
+            self.temp_output_stack.set_visible_child_name("temp_label")
+            self.humidity_output_stack.set_visible_child_name("humidity_label")
+        except Exception as e:
+            print("Error calling sensor data:", e)
+            temp, hum = "Loading...", "Loading..."  # fallback values
+            self.temp_output_stack.set_visible_child_name("temp_spinner")
+            self.humidity_output_stack.set_visible_child_name("humidity_spinner")
+            self.temp_label.set_text(temp)
+            self.humidity_label.set_text(hum)
+
+        try:
+            brightness = call_data(False, True, False, False)
+            self.brightness_label.set_text(f"{brightness}%")            
+            self.brightness_output_stack.set_visible_child_name("brightness_label")
+        except Exception as e:
+            print("Error calling brightness data:", e)
+            brightness = "Loading..."
+            self.brightness_output_stack.set_visible_child_name("brightness_spinner")
+            self.brightness_label.set_text(brightness)
+
     def on_button_clicked(self,widget):
         print("Color Settings button clicked")
         self.popover.popup()
