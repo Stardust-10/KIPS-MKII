@@ -11,7 +11,7 @@
 HardwareSerial SerialUART32_0(0); // UART0
 HardwareSerial SerialUART32_1(1); // UART1
 
-const int ldrPin = 5;
+const int ldrPin = 1;
 
 #define UART_TX_PIN 43
 #define UART_RX_PIN 44
@@ -29,7 +29,7 @@ void setup() {
 
   //Pin for LDR
   // Set the pin mode (though analogRead works without explicit pinMode for ADC pins)
-  pinMode(ldrPin, INPUT);
+  //pinMode(ldrPin, INPUT);
 
   // UART0 to Raspberry Pi
   SerialUART32_0.begin(112500, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);

@@ -13,8 +13,8 @@ HardwareSerial SerialUART32_1(1);
 Adafruit_AM2320 am2320;
 
 void setup() {
-  Serial.begin(9600);  // USB debug
-  SerialUART32_0.begin(9600, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
+  Serial.begin(115200);  // USB debug
+  SerialUART32_0.begin(115200, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
 
   Serial.println("ESP32 ready");
   am2320.begin();
