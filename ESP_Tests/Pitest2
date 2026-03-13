@@ -1,0 +1,73 @@
+import RPi.GPIO as GPIO
+import time
+import subprocess
+import os
+import sys
+
+# ------------------ Configuration ------------------
+SERIAL_PORT = "/dev/serial0"      # Pi UART
+BAUD_RATE = 115200
+CHIP_TYPE = "esp32s3"
+FLASH_ADDRESS = "0x0"
+FIRMWARE_FILE = "firmware.bin"    # Path to compiled Arduino .bin
+
+# GPIO pins for automatic bootloader
+BOOT_PIN = 17   # Pi GPIO connected to ESP32 GPIO0
+RESET_PIN = 22  # Pi GPIO connected to ESP32 EN / RESET (optional)
+
+# Optional: set to False if you want manual reset
+USE_GPIO_BOOT = True
+# ---------------------------------------------------
+
+# Initialize GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(BOOT_PIN, GPIO.OUT)
+GPIO.setup(RESET_PIN, GPIO.OUT)
+
+def enter_bootloader():
+    if not USE_GPIO_BOOT:
+        print("Manual bootloader mode: hold BOOT, press RESET, release BOOT")
+        input("Press Enter after entering bootloader...")
+        return
+
+    print("Entering bootloader via GPIO...")
+    GPIO.output(BOOT_PIN, GPIO.LOW)
+    GPIO.output(RESET_PIN, GPIO.LOW)
+    time.sleep(0.1)               # Pulse RESET
+    GPIO.output(RESET_PIN, GPIO.HIGH)
+    GPIO.output(BOOT_PIN, GPIO.HIGH)
+    time.sleep(0.3)               # Wait for ESP32 UART to start
+    print("Bootloader mode should now be active")
+
+def flash_firmware():
+    if not os.path.isfile(FIRMWARE_FILE):
+        print(f"Firmware file '{FIRMWARE_FILE}' not found")
+        sys.exit(1)
+
+    cmd = [
+        "esptool.py",
+        "--chip", CHIP_TYPE,
+        "--port", SERIAL_PORT,
+        "--baud", str(BAUD_RATE),
+        "write_flash",
+        FLASH_ADDRESS,
+        FIRMWARE_FILE
+    ]
+
+    print(f"Flashing {FIRMWARE_FILE} to {CHIP_TYPE} on {SERIAL_PORT}...")
+    try:
+        subprocess.run(cmd, check=True)
+        print("Flashing complete!")
+    except subprocess.CalledProcessError:
+        print("Flashing failed. Check connections and bootloader mode.")
+        sys.exit(1)
+
+def main():
+    try:
+        enter_bootloader()
+        flash_firmware()
+    finally:
+        GPIO.cleanup()
+
+if __name__ == "__main__":
+    main()
