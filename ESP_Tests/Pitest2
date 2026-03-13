@@ -5,87 +5,61 @@ import os
 import sys
 
 # ------------------ Configuration ------------------
-SERIAL_PORT = "/dev/serial0"
-BAUD_RATE = 460800  # Increased for faster flashing (S3 handles this well)
+SERIAL_PORT = "/dev/serial0"  # UART0 on CM4 (GPIO 14/15)
+BAUD_RATE = 460800             # Fast and stable for S3
 CHIP_TYPE = "esp32s3"
 FLASH_ADDRESS = "0x0"
 FIRMWARE_FILE = "firmware.bin"
 
-# GPIO pins for automatic bootloader
-BOOT_PIN = 17    # Connected to ESP32 GPIO0
-RESET_PIN = 22   # Connected to ESP32 EN / RESET
-
-USE_GPIO_BOOT = True
+BOOT_PIN = 17    # CM4 GPIO to ESP32 GPIO0
+RESET_PIN = 22   # CM4 GPIO to ESP32 EN
 # ---------------------------------------------------
 
-def setup_gpio():
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
-    GPIO.setup(BOOT_PIN, GPIO.OUT)
-    GPIO.setup(RESET_PIN, GPIO.OUT)
-    # Initialize pins to HIGH (Normal running state)
-    GPIO.output(BOOT_PIN, GPIO.HIGH)
-    GPIO.output(RESET_PIN, GPIO.HIGH)
-
 def enter_bootloader():
-    if not USE_GPIO_BOOT:
-        print(">> Manual bootloader mode <<")
-        input("Hold BOOT, tap RESET, then press Enter here...")
-        return
+    print("Force-triggering ROM Bootloader...")
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup([BOOT_PIN, RESET_PIN], GPIO.OUT)
 
-    print("Executing hardware reset sequence...")
-    # 1. Pull BOOT low first
-    GPIO.output(BOOT_PIN, GPIO.LOW)
-    time.sleep(0.05)
-    
-    # 2. Trigger RESET (Pull LOW then HIGH)
-    GPIO.output(RESET_PIN, GPIO.LOW)
-    time.sleep(0.2) 
-    GPIO.output(RESET_PIN, GPIO.HIGH)
-    
-    # 3. Hold BOOT for a moment after reset release to ensure ROM entry
+    # Sequence: Hold BOOT, pulse RESET
+    GPIO.output(BOOT_PIN, GPIO.LOW)   # Prepare to enter boot mode
+    GPIO.output(RESET_PIN, GPIO.LOW)  # Chip enters Reset
+    time.sleep(0.2)
+    GPIO.output(RESET_PIN, GPIO.HIGH) # Chip wakes up and sees BOOT is LOW
     time.sleep(0.1)
-    GPIO.output(BOOT_PIN, GPIO.HIGH)
-    print(">> Target should be in bootloader mode.")
+    GPIO.output(BOOT_PIN, GPIO.HIGH)  # Release BOOT
+    print(">> Target is now in ROM Bootloader mode.")
 
 def flash_firmware():
     if not os.path.isfile(FIRMWARE_FILE):
-        print(f"Error: {FIRMWARE_FILE} not found.")
-        sys.exit(1)
+        print(f"Error: {FIRMWARE_FILE} not found!")
+        return
 
-    # Modern esptool syntax using standard arguments
+    # Using modern esptool syntax
     esptool_cmd = [
         sys.executable, "-m", "esptool",
         "--chip", CHIP_TYPE,
         "--port", SERIAL_PORT,
         "--baud", str(BAUD_RATE),
-        "--before", "default_reset", # Toggles RTS/DTR if connected
-        "--after", "hard_reset",     # Reboots chip after flash
+        "--before", "no_reset",  # We already did the reset manually via GPIO
+        "--after", "hard_reset", # This will reboot the chip into your new app
         "write_flash",
-        "-z",                        # Compress data for speed
-        "--flash_mode", "dio",       # Standard for S3 modules
+        "-z",                    # Compression
+        "--flash_mode", "dio",
         "--flash_freq", "80m",
         FLASH_ADDRESS,
         FIRMWARE_FILE
     ]
 
-    print(f"Flashing {FIRMWARE_FILE}...")
     try:
-        # We use a slight delay to let the OS release the serial port after reset
-        time.sleep(0.5) 
+        print("Starting esptool...")
         subprocess.run(esptool_cmd, check=True)
-        print("\n✨ Flashing successful!")
-    except subprocess.CalledProcessError as e:
-        print("\n❌ Flashing failed. Check wiring or serial port permissions.")
-        sys.exit(1)
+        print("\n✨ Flash Complete!")
+    except subprocess.CalledProcessError:
+        print("\n❌ Flash failed. Check if /dev/serial0 is free (sudo raspi-config).")
 
-def main():
+if __name__ == "__main__":
     try:
-        setup_gpio()
         enter_bootloader()
         flash_firmware()
     finally:
         GPIO.cleanup()
-
-if __name__ == "__main__":
-    main()
