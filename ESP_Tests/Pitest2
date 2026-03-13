@@ -1,0 +1,65 @@
+import RPi.GPIO as GPIO
+import time
+import subprocess
+import os
+import sys
+
+# ------------------ Configuration ------------------
+SERIAL_PORT = "/dev/serial0"  # UART0 on CM4 (GPIO 14/15)
+BAUD_RATE = 460800             # Fast and stable for S3
+CHIP_TYPE = "esp32s3"
+FLASH_ADDRESS = "0x0"
+FIRMWARE_FILE = "firmware.bin"
+
+BOOT_PIN = 17    # CM4 GPIO to ESP32 GPIO0
+RESET_PIN = 22   # CM4 GPIO to ESP32 EN
+# ---------------------------------------------------
+
+def enter_bootloader():
+    print("Force-triggering ROM Bootloader...")
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup([BOOT_PIN, RESET_PIN], GPIO.OUT)
+
+    # Sequence: Hold BOOT, pulse RESET
+    GPIO.output(BOOT_PIN, GPIO.LOW)   # Prepare to enter boot mode
+    GPIO.output(RESET_PIN, GPIO.LOW)  # Chip enters Reset
+    time.sleep(0.2)
+    GPIO.output(RESET_PIN, GPIO.HIGH) # Chip wakes up and sees BOOT is LOW
+    time.sleep(0.1)
+    GPIO.output(BOOT_PIN, GPIO.HIGH)  # Release BOOT
+    print(">> Target is now in ROM Bootloader mode.")
+
+def flash_firmware():
+    if not os.path.isfile(FIRMWARE_FILE):
+        print(f"Error: {FIRMWARE_FILE} not found!")
+        return
+
+    # Using modern esptool syntax
+    esptool_cmd = [
+        sys.executable, "-m", "esptool",
+        "--chip", CHIP_TYPE,
+        "--port", SERIAL_PORT,
+        "--baud", str(BAUD_RATE),
+        "--before", "no_reset",  # We already did the reset manually via GPIO
+        "--after", "hard_reset", # This will reboot the chip into your new app
+        "write_flash",
+        "-z",                    # Compression
+        "--flash_mode", "dio",
+        "--flash_freq", "80m",
+        FLASH_ADDRESS,
+        FIRMWARE_FILE
+    ]
+
+    try:
+        print("Starting esptool...")
+        subprocess.run(esptool_cmd, check=True)
+        print("\n✨ Flash Complete!")
+    except subprocess.CalledProcessError:
+        print("\n❌ Flash failed. Check if /dev/serial0 is free (sudo raspi-config).")
+
+if __name__ == "__main__":
+    try:
+        enter_bootloader()
+        flash_firmware()
+    finally:
+        GPIO.cleanup()
