@@ -5,65 +5,83 @@ import os
 import sys
 
 # ------------------ Configuration ------------------
-SERIAL_PORT = "/dev/serial0"      # Pi UART
-BAUD_RATE = 115200
+SERIAL_PORT = "/dev/serial0"
+BAUD_RATE = 460800  # Increased for faster flashing (S3 handles this well)
 CHIP_TYPE = "esp32s3"
 FLASH_ADDRESS = "0x0"
-FIRMWARE_FILE = "firmware.bin"    # Path to compiled Arduino .bin
+FIRMWARE_FILE = "firmware.bin"
 
 # GPIO pins for automatic bootloader
-BOOT_PIN = 17   # Pi GPIO connected to ESP32 GPIO0
-RESET_PIN = 22  # Pi GPIO connected to ESP32 EN / RESET (optional)
+BOOT_PIN = 17    # Connected to ESP32 GPIO0
+RESET_PIN = 22   # Connected to ESP32 EN / RESET
 
-# Optional: set to False if you want manual reset
 USE_GPIO_BOOT = True
 # ---------------------------------------------------
 
-# Initialize GPIO
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(BOOT_PIN, GPIO.OUT)
-GPIO.setup(RESET_PIN, GPIO.OUT)
+def setup_gpio():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
+    GPIO.setup(BOOT_PIN, GPIO.OUT)
+    GPIO.setup(RESET_PIN, GPIO.OUT)
+    # Initialize pins to HIGH (Normal running state)
+    GPIO.output(BOOT_PIN, GPIO.HIGH)
+    GPIO.output(RESET_PIN, GPIO.HIGH)
 
 def enter_bootloader():
     if not USE_GPIO_BOOT:
-        print("Manual bootloader mode: hold BOOT, press RESET, release BOOT")
-        input("Press Enter after entering bootloader...")
+        print(">> Manual bootloader mode <<")
+        input("Hold BOOT, tap RESET, then press Enter here...")
         return
 
-    print("Entering bootloader via GPIO...")
+    print("Executing hardware reset sequence...")
+    # 1. Pull BOOT low first
     GPIO.output(BOOT_PIN, GPIO.LOW)
+    time.sleep(0.05)
+    
+    # 2. Trigger RESET (Pull LOW then HIGH)
     GPIO.output(RESET_PIN, GPIO.LOW)
-    time.sleep(0.1)               # Pulse RESET
+    time.sleep(0.2) 
     GPIO.output(RESET_PIN, GPIO.HIGH)
+    
+    # 3. Hold BOOT for a moment after reset release to ensure ROM entry
+    time.sleep(0.1)
     GPIO.output(BOOT_PIN, GPIO.HIGH)
-    time.sleep(0.3)               # Wait for ESP32 UART to start
-    print("Bootloader mode should now be active")
+    print(">> Target should be in bootloader mode.")
 
 def flash_firmware():
     if not os.path.isfile(FIRMWARE_FILE):
-        print(f"Firmware file '{FIRMWARE_FILE}' not found")
+        print(f"Error: {FIRMWARE_FILE} not found.")
         sys.exit(1)
 
-    cmd = [
-        "esptool.py",
+    # Modern esptool syntax using standard arguments
+    esptool_cmd = [
+        sys.executable, "-m", "esptool",
         "--chip", CHIP_TYPE,
         "--port", SERIAL_PORT,
         "--baud", str(BAUD_RATE),
+        "--before", "default_reset", # Toggles RTS/DTR if connected
+        "--after", "hard_reset",     # Reboots chip after flash
         "write_flash",
+        "-z",                        # Compress data for speed
+        "--flash_mode", "dio",       # Standard for S3 modules
+        "--flash_freq", "80m",
         FLASH_ADDRESS,
         FIRMWARE_FILE
     ]
 
-    print(f"Flashing {FIRMWARE_FILE} to {CHIP_TYPE} on {SERIAL_PORT}...")
+    print(f"Flashing {FIRMWARE_FILE}...")
     try:
-        subprocess.run(cmd, check=True)
-        print("Flashing complete!")
-    except subprocess.CalledProcessError:
-        print("Flashing failed. Check connections and bootloader mode.")
+        # We use a slight delay to let the OS release the serial port after reset
+        time.sleep(0.5) 
+        subprocess.run(esptool_cmd, check=True)
+        print("\n✨ Flashing successful!")
+    except subprocess.CalledProcessError as e:
+        print("\n❌ Flashing failed. Check wiring or serial port permissions.")
         sys.exit(1)
 
 def main():
     try:
+        setup_gpio()
         enter_bootloader()
         flash_firmware()
     finally:
