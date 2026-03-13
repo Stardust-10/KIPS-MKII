@@ -1,5 +1,16 @@
 #include <Arduino.h>
 
+/*
+
+  Pinout:
+    Leftmost pin = GND
+    left pin = signal (what ldrPin is, which is GPIO 1 on ESP32S3 dev board atp)
+    right pin = N/A
+    Rightmost pin = PWR (3V3)
+
+*/
+
+
 // Define the pin where the LDR is connected (e.g., GPIO 34)
 const int ldrPin = 1; 
 

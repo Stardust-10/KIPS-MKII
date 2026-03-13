@@ -1,8 +1,17 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
 #include "DFRobot_Heartrate.h"
-#define hbRatePin 18
+#define hbRatePin 4
 #define hbPowerPin 16
+
+/*
+
+  Pinout:
+    black wire = GND
+    Red wire = PWR (3V3 on ESP32S3)
+    Green wire = Signal 
+
+*/
 
 DFRobot_Heartrate heartrate(DIGITAL_MODE);   // ANALOG_MODE or DIGITAL_MODE
 
@@ -30,6 +39,8 @@ void setup() {
 
   sensorOff(); //HB sensor off by default
 
+  Serial.print("Sensor off. You may attempt to measure heart rate.\n");
+
 }
 
 void loop() {
@@ -52,6 +63,12 @@ void loop() {
       uint8_t rateValue = 0;
 
       while (millis() - start < 30000) {
+        /*
+        int raw = digitalRead(hbRatePin);
+        Serial.print("pulse: ");
+        Serial.println(raw);
+        */
+
         heartrate.getValue(hbRatePin);   // ESP32-S3 pin 18 foot sampled values
         rateValue = heartrate.getRate();   // Get heart rate value 
 
@@ -68,8 +85,10 @@ void loop() {
         delay(20);
       }
 
-      Serial.print("HB_END")
-      sesorOff();
+    Serial.println("Heartbeat session ended.");   // debug message
+    SerialUART32_0.println("HB_END");              // message for CM4
+    sensorOff();
+    Serial.println("HB sensor shut down.");
 
     }
 
@@ -79,8 +98,4 @@ void loop() {
     }
 
   }
-
-  sensorOff();
-  Serial.println("HB sensor shut down.");
-  delay(10000);
 }

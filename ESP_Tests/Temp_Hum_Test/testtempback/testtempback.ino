@@ -3,6 +3,17 @@
 #include "Adafruit_Sensor.h"
 #include "Adafruit_AM2320.h"
 
+/*
+
+  Board Pinout
+
+    3V3 pin = VDD (red wire)
+    GPIO pin 9 = SCL (ESP32S3 Dev board, middle left pin)
+    GPIO pin 8 = SDA (ESP32S3 Dev board, middle right pin)
+    GND pin = GND 
+    
+*/
+
 // ================= UART =================
 HardwareSerial SerialUART32_0(0);
 HardwareSerial SerialUART32_1(1);
@@ -46,6 +57,7 @@ void loop() {
 
       Serial.println("Data sent to Pi");
     }
+
     else {
       SerialUART32_0.println("ERR");
       
