@@ -12,10 +12,12 @@ void setup() {
 void loop() {
   int x, y, z;
 
+  //Set X, Y and Z coordinates
   x = analogRead(JS_X);
   y = analogRead(JS_Y);
   z = digitalRead(JS_Z);
 
+  //Print each coordinate
   Serial.print("X analog read: ");
   Serial.print(x);
   Serial.print("\n\n");

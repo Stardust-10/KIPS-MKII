@@ -12,7 +12,7 @@
  * @url  https://github.com/DFRobot/DFRobot_Heartrate
  */
 #include "DFRobot_Heartrate.h"
-#define heartratePin 4
+#define heartratePin 4 //Signal pin on the ESP32
 
 DFRobot_Heartrate heartrate(DIGITAL_MODE);   // ANALOG_MODE or DIGITAL_MODE
 
@@ -20,11 +20,12 @@ void setup() {
   Serial.begin(115200);
 }
 
+//Obtains heart rate value from the heart rate pin, then print it. 
 void loop() {
   
-  uint8_t rateValue;
+  uint8_t rateValue = 0;
   
-  heartrate.getValue(heartratePin);   // A1 foot sampled values
+  heartrate.getValue(heartratePin);   // Get values from GPIO4
   
   rateValue = heartrate.getRate();   // Get heart rate value 
   

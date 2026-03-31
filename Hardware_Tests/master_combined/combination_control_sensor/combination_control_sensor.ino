@@ -9,9 +9,9 @@
 HardwareSerial SerialUART32_0(0); // UART0
 HardwareSerial SerialUART32_1(1); // UART1 (unused for now)
 
-// ---------------- Pins / Constants ----------------
-#define UART_TX_PIN 43
-#define UART_RX_PIN 44
+// ---------------- Pins / Constants (ALL ON ESP32) ----------------
+#define UART_TX_PIN 43 
+#define UART_RX_PIN 44 
 #define UART_BAUD 115200
 
 #define JS_X 6
@@ -22,10 +22,10 @@ HardwareSerial SerialUART32_1(1); // UART1 (unused for now)
 #define BTN_RIGHT 13
 #define BTN_ENTER 46
 
-#define hbRatePin 4
-#define hbPowerPin 16
-#define tempsda 3
-#define tempscl 8
+#define hbRatePin 4 
+#define hbPowerPin 16 
+#define tempsda 3 
+#define tempscl 8 
 const int ldrPin = 1;
 
 #define DEADZONE 800
@@ -37,7 +37,9 @@ bool commandActive = false;
 DFRobot_Heartrate heartrate(DIGITAL_MODE);
 Adafruit_AM2320 am2320 = Adafruit_AM2320();
 
-// ---------------- Helpers ----------------
+// ---------------- Helper Functions ----------------
+
+//Turns heartbeat sensor on or off
 void sensorOn() {
   digitalWrite(hbPowerPin, HIGH);
   delay(1000);
@@ -47,6 +49,7 @@ void sensorOff() {
   digitalWrite(hbPowerPin, LOW);
 }
 
+//Takes temperature and humidity readings, then displays them.
 void sendTempHum() {
   float temp = NAN;
   float hum = NAN;
@@ -82,6 +85,7 @@ void sendTempHum() {
   Serial.println(hum, 2);
 }
 
+//Takes LDR readings
 void sendLDR() {
   int ldr = analogRead(ldrPin);
 
@@ -92,6 +96,8 @@ void sendLDR() {
   Serial.println(ldr);
 }
 
+//Attempts to read heartbeat by activating 
+//the sensor for 30 seconds to take a reading 
 void sendHeartbeatSession() {
   sensorOn();
 
@@ -121,6 +127,8 @@ void sendHeartbeatSession() {
   sensorOff();
 }
 
+//Takes commands from the CM4 according 
+//to user input and sends them to the appropriate sensor function 
 void processPiCommand(String incoming) {
   incoming.trim();
   int command = incoming.toInt();
@@ -158,19 +166,23 @@ void processPiCommand(String incoming) {
 void setup() {
   Serial.begin(115200);
 
+  //Activate UART0 on ESP32
   SerialUART32_0.begin(UART_BAUD, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
 
+  //Setting up pullup resistors on buttons
   pinMode(BTN_UP, INPUT_PULLUP);
   pinMode(BTN_DOWN, INPUT_PULLUP);
   pinMode(BTN_LEFT, INPUT_PULLUP);
   pinMode(BTN_RIGHT, INPUT_PULLUP);
   pinMode(BTN_ENTER, INPUT_PULLUP);
 
+  //Setting up heartbeat sensor pins
   pinMode(hbPowerPin, OUTPUT);
   pinMode(hbRatePin, INPUT);
 
   sensorOff();
 
+  //Temperature setup
   Wire.begin(tempsda, tempscl);
 
   if (!am2320.begin()) {
@@ -184,10 +196,12 @@ void setup() {
 
 // ---------------- Main Loop ----------------
 void loop() {
+  
   // -------- PART 1: Check for Pi command first --------
   if (SerialUART32_0.available()) {
     commandActive = true;
 
+    //Read an incoming string until a \n is seen, then send it to the processPiCommand function
     String incoming = SerialUART32_0.readStringUntil('\n');
     processPiCommand(incoming);
 
@@ -200,6 +214,7 @@ void loop() {
     int x = -(analogRead(JS_X) - 1930);
     int y =  (analogRead(JS_Y) - 1947);
 
+    //Make sure the cursor does not continued to be registered off screen.
     if (abs(x) > DEADZONE || abs(y) > DEADZONE) {
       SerialUART32_0.print("M,");
       SerialUART32_0.print(x);
@@ -207,6 +222,7 @@ void loop() {
       SerialUART32_0.println(y);
     }
 
+    //How to interpret button input, plus print if successfully registered
     if (millis() - lastButtonTime > 200) {
       if (digitalRead(BTN_UP) == LOW) {
         SerialUART32_0.println("UP");
