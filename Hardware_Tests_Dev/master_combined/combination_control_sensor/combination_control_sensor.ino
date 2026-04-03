@@ -9,7 +9,7 @@
 HardwareSerial SerialUART32_0(0); // UART0
 HardwareSerial SerialUART32_1(1); // UART1 (unused for now)
 
-// ---------------- Pins / Constants (ALL ON ESP32) ----------------
+// ---------------- Pins / Constants (DEVELOPMENT - on dev-boards) ----------------
 #define UART_TX_PIN 43 
 #define UART_RX_PIN 44 
 #define UART_BAUD 115200
@@ -26,6 +26,32 @@ HardwareSerial SerialUART32_1(1); // UART1 (unused for now)
 #define hbPowerPin 16 
 #define tempsda 3 
 #define tempscl 8 
+
+/////////////PRODUCTION///////////////////////////////////
+/*
+#define UART_TX_PIN 37 
+#define UART_RX_PIN 36 
+#define UART_BAUD 115200
+
+#define JS_X 20
+#define JS_Y 19
+#define BTN_UP 33
+#define BTN_DOWN 32
+#define BTN_LEFT 31
+#define BTN_RIGHT 34
+#define BTN_ENTER 35
+
+#define hbRatePin 4 
+#define hbPowerPin 3
+#define tempsda 12 
+#define tempscl 17
+// added for internal temp/hum
+#define tempsda1 21
+#define tempscl1 22
+
+*/
+/////////////////////////////////////////////////
+
 const int ldrPin = 1;
 
 #define DEADZONE 800
