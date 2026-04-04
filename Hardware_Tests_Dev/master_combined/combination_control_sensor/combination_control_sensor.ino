@@ -46,8 +46,8 @@ HardwareSerial SerialUART32_1(1); // UART1 (unused for now)
 #define tempsda 12 
 #define tempscl 17
 // added for internal temp/hum
-#define tempsda1 21
-#define tempscl1 22
+#define tempsda1 8
+#define tempscl1 9
 
 */
 /////////////////////////////////////////////////
