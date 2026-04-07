@@ -1,33 +1,44 @@
+import os
+import sys
+
+DIRR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(DIRR)
+
+os.environ["WEBKIT_DISABLE_COMPOSITING_MODE"] = "1"
+os.environ["GDK_BACKEND"] = "wayland"
+
 import gi
 gi.require_version('Gtk', '3.0') 
+gi.require_version('WebKit2', '4.1') 
 from datetime import datetime
-from gi.repository import Gtk, Gdk, GLib, Pango
+from gi.repository import Gtk, Gdk, GLib, Pango, WebKit2
 
 import re
-import os
 import subprocess
 from gi.repository import Gio
 from gi.repository import GdkPixbuf
 import subprocess
 from dataclasses import dataclass
+from esp_sensor_call import call_data
+import math
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+path = os.path.join(BASE_DIR, "styles.css")
+print(f"Loading CSS from: {path}")
 
 screen = Gdk.Screen.get_default()
 provider = Gtk.CssProvider()
-provider.load_from_path("/home/kips/Desktop/kips_files/gui_shit/style.css")
-#provider.load_from_path("C:\\msys64\\home\\jljme\\styles.css")
-Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+dynamic_provider = Gtk.CssProvider()
 
-#os.path.dirname(os.path.abspath(__file__))
-
+provider.load_from_path(path)
+Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 ROWS, COLS = 3, 4
 PAGE_SIZE = ROWS * COLS
 
 value = 1
 wifi_val = 0
 vol_value = 0
-
-css_file = "/home/kips/Desktop/kips_files/gui_shit/style.css,"
-dynamic_provider = Gtk.CssProvider()
 
 
 @dataclass
@@ -56,7 +67,7 @@ self.content_stack.set_visible_child_name(app.stack_name)
 """
 
 class Launcher(Gtk.Application):
-
+    
     def __init__(self):
         super().__init__(application_id="com.example.Launcher")
         self.builder = None
@@ -69,60 +80,64 @@ class Launcher(Gtk.Application):
         self.nav_bar = None
         self.apps = []  # list of dicts: {"name": "Calculator", "icon": "accessories-calculator"}
         self.open_apps = []
+        self.app_defaults = {
+            "color": "#002f00",
+            "image": "",
+            "font_family": "Sans",
+            "font_size": "14"
 
-    test_app = AppEntry(
-        app_id="test_app",
-        title="Test App",
-        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
-        stack_name="app_stack"
-    )
-
-    test_app1 = AppEntry(
-        app_id="test_app1",
-        title="Test App 1",
-        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
-        stack_name="status_page"
-    )
-
-    open_apps = [test_app, test_app1]
+            }
+        
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            dynamic_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_USER
+        )
+                       
+        #GLib.idle_add(self.setup_browser)
+        GLib.idle_add(self.apply_all_styles)
 
     status_app = AppEntry(
         app_id="status_app",
         title="Status",
-        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
+        icon_path=os.path.join(BASE_DIR, "icons", "calculator_128x128.png"),
         stack_name="status_page"
     )
 
     apps_app = AppEntry(
         app_id="apps_app",
         title="Apps",
-        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
+        icon_path=os.path.join(BASE_DIR, "icons", "battery_1.png"),
         stack_name="app_stack"
     )
 
     clock_app = AppEntry(
         app_id="clock_app",
         title="Clock",
-        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
+        icon_path=os.path.join(BASE_DIR, "icons", "volume_1.png"),
         stack_name="clock_fullscreen"
     )
 
     settings_app = AppEntry(
         app_id="settings_app",
         title="Settings",
-        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
+        icon_path=os.path.join(BASE_DIR, "icons", "wifi_1.png"),
         stack_name="settings_page"
     )
 
     radio_app = AppEntry(
         app_id="radio_app",
         title="Radio",
-        icon_path="/home/kips/Desktop/kips_files/gui_shit/calculator_128x128.png",
+        icon_path=os.path.join(BASE_DIR, "icons", "calculator_128x128.png"),
         stack_name="radio_page"
     )
-
-
-
+    
+    heartbeat_app = AppEntry(
+        app_id="heartbeat_app",
+        title="Health",
+        icon_path=os.path.join(BASE_DIR, "icons", "calculator_128x128.png"),
+        stack_name="heartbeat_page"
+    )
 
     def _set_image_scaled(self, image_widget, file_path, size_px=28):
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
@@ -135,14 +150,22 @@ class Launcher(Gtk.Application):
 
     def _update_battery_val(self):
         global value
-        #print(f'battery_value: {value}')
-        if value < 100:
-            value += 1
-        else:
-            value = 1
-        self._update_battery_icon(value, False)  # example values
-
-        return(value)
+        try:
+            with open("/tmp/batt_capacity", "r") as f:
+                contents = f.read().strip()
+                percent = contents.split(".0")[0]
+                lp = contents.split(".0")[1]
+                if lp:
+                    lp = True
+                #print(lp)
+                percent = (int(percent))
+                #print(f'percent: {percent}')
+                self._update_battery_icon(percent, lp, False)  # example values
+                return(percent)
+        except FileNotFoundError:
+            self._update_battery_icon(-1, False, False)
+            print('Battery read error')
+            return(-1)
     
     def _update_wifi_val(self, verbose=False):
         def signal_info():
@@ -215,15 +238,15 @@ class Launcher(Gtk.Application):
         if self.volume_icon is None:
             return False     
         if level >= 75:
-            icon_name = "volume_4.png"
+            icon_name = os.path.join(BASE_DIR, "icons", "volume_4.png")
         elif level >= 50:
-            icon_name = "volume_3.png"
+            icon_name = os.path.join(BASE_DIR, "icons", "volume_3.png")
         elif level >= 25:
-            icon_name = "volume_2.png"
+            icon_name = os.path.join(BASE_DIR, "icons", "volume_2.png")
         elif level > 0:
-            icon_name = "volume_1.png"
+            icon_name = os.path.join(BASE_DIR, "icons", "volume_1.png")
         else:
-            icon_name = "volume_0.png"
+            icon_name = os.path.join(BASE_DIR, "icons", "volume_0.png")
 
         self._set_image_scaled(self.volume_icon, icon_name, size_px=28)
 
@@ -231,44 +254,46 @@ class Launcher(Gtk.Application):
         if self.wifi_icon is None:
             return False      
         if strength >= -39:
-            icon_name = "wifi_4.png"
+            icon_name = os.path.join(BASE_DIR, "icons", "wifi_4.png")
         elif strength >= -55:
-            icon_name = "wifi_3.png"
+            icon_name = os.path.join(BASE_DIR, "icons", "wifi_3.png")
         elif strength >= -70:
-            icon_name = "wifi_2.png"
+            icon_name = os.path.join(BASE_DIR, "icons", "wifi_2.png")
         elif strength >= -80:
-            icon_name = "wifi_1.png"
+            icon_name = os.path.join(BASE_DIR, "icons", "wifi_1.png")
         else:
-            icon_name = "wifi_0.png"
+            icon_name = os.path.join(BASE_DIR, "icons", "wifi_0.png")
 
         self._set_image_scaled(self.wifi_icon, icon_name, size_px=28)
 
-    def _update_battery_icon(self, percentage, is_charging):
+    def _update_battery_icon(self, percentage, low_power=False, is_charging = False):
         if self.battery_icon is None:
             #print('false')
-            return False      
-        if is_charging:
-            icon_name = "battery_charging.png"
-        elif percentage <= 10:
-            icon_name = "battery_9.png"
-        elif percentage <= 20:
-            icon_name = "battery_8.png"
-        elif percentage <= 30:
-            icon_name = "battery_7.png"
-        elif percentage <= 40:
-            icon_name = "battery_6.png"
-        elif percentage <= 50:
-            icon_name = "battery_5.png"
-        elif percentage <= 60:
-            icon_name = "battery_4.png"
-        elif percentage <= 70:
-            icon_name = "battery_3.png"
-        elif percentage <= 80:
-            icon_name = "battery_2.png"
-        elif percentage <= 90:
-            icon_name = "battery_1.png"
+            return False
+        if low_power:
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "wifi_0.png")
+        elif is_charging:
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_charging.png")
+        elif percentage <= 10.0:
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_9.png")
+        elif percentage <= 20.0:
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_8.png")
+        elif percentage <= 30.0:
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_7.png")
+        elif percentage <= 40.0:
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_6.png")
+        elif percentage <= 50.0:
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_5.png")
+        elif percentage <= 60.0:
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_4.png")
+        elif percentage <= 70.0:
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_3.png")
+        elif percentage <= 80.0:
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_2.png")
+        elif percentage <= 90.0:
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_1.png")
         else:
-            icon_name = "battery_0.png"
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_0.png")
 
         self._set_image_scaled(self.battery_icon, icon_name, size_px=100)
 
@@ -310,7 +335,11 @@ class Launcher(Gtk.Application):
         self.wifi_icon = self.builder.get_object("wifi_icon")
         self.volume_icon = self.builder.get_object("volume_icon")
         self.temp_label = self.builder.get_object("temp_label")
-        self.humidity_label = self.builder.get_object("humidity")
+        self.temp_output_stack = self.builder.get_object("temp_output_stack")
+        self.humidity_label = self.builder.get_object("humidity_label")
+        self.humidity_output_stack = self.builder.get_object("humidity_output_stack")
+        self.brightness_label = self.builder.get_object("brightness_label")
+        self.brightness_output_stack = self.builder.get_object("brightness_output_stack")
         self.nav_bar = self.builder.get_object("nav_bar")
         self.home_icon_eb = self.builder.get_object("home_icon_eb")
         self.status_button = self.builder.get_object("status_button")
@@ -321,6 +350,7 @@ class Launcher(Gtk.Application):
         self.clock_app_label = self.builder.get_object("clock_app_label")
         self.settings_button = self.builder.get_object("settings_button")
         self.radio_button = self.builder.get_object("radio_button")
+        self.heartbeat_button = self.builder.get_object("heartbeat_button")
         self.button = self.builder.get_object("Color")
 
         self.button.connect("color-set", self.on_color_chosen)
@@ -330,7 +360,13 @@ class Launcher(Gtk.Application):
         self.background_image.connect("file-set", self.on_background_file)
         self.font = self.builder.get_object("Font")
         self.font.connect("font-set", self.on_font)
-       
+        
+        self.setup_volume_controls()
+        
+        self.browser_page = self.builder.get_object("browser_page")
+        # self.setup_browser()
+        self.browser_button = self.builder.get_object("browser")
+        self.browser_button.connect("clicked", self.browser_open)
        
 
         if self.home_icon_eb is not None:
@@ -338,6 +374,7 @@ class Launcher(Gtk.Application):
             self.home_icon_eb.connect("button-press-event", self._on_home_icon_clicked)
 
         if self.status_button is not None:
+            #self.status_button.connect("clicked", self._update_status_page)
             self.status_button.connect("clicked", self._on_app_icon_clicked, self.status_app)
         
         if self.apps_button is not None:
@@ -349,11 +386,16 @@ class Launcher(Gtk.Application):
         if self.radio_button is not None:
             self.radio_button.connect("clicked", self._on_app_icon_clicked, self.radio_app)
         
+        if self.heartbeat_button is not None:
+            self.heartbeat_button.connect("clicked", self._on_app_icon_clicked, self.heartbeat_app)
+        
         if self.clock_button is not None:
             self.clock_button.connect("clicked", self._on_clock_button_clicked)  
 
         if self.clock_exit_button is not None:
             self.clock_exit_button.connect("clicked", self._on_clock_exit_button_clicked)  # example, replace with actual app entry
+        
+        #self._update_status_page()
         
         self.add_window(win)
 
@@ -390,29 +432,31 @@ class Launcher(Gtk.Application):
         ]'''
 
         self.apps = [
-            {"name": "calculator", "exec": "galculator", 
-            "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "glade", "exec": "glade",
-            "icon_path": os.path.join(BASE_DIR, "glade_icon.png")},
-            {"name": "app_test3.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "app_test4.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test5.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "app_test6.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test7.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test8.png", "icon_path": os.path.join(BASE_DIR, "test.svg")},
-            {"name": "app_test9.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test10.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test11.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test12.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test13.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test14.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test15.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test16.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test17.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "app_test18.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test19.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "app_test20.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "app_test21.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
+            {"name": "calculator", 
+            "type": "external", 
+            "exec": "galculator", 
+            "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
+            {"name": "glade", "type": "external", "exec": "glade",
+            "icon_path": os.path.join(BASE_DIR, "icons", "glade_icon.png")},
+            {"name": "browser", "type": "internal", "handler": "browser_open", "icon_path": os.path.join(BASE_DIR, "icons", "google.png")},
+            {"name": "app_test4.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test5.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
+            {"name": "app_test6.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test7.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test8.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.svg")},
+            {"name": "app_test9.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test10.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test11.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test12.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test13.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test14.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test15.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test16.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test17.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
+            {"name": "app_test18.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test19.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
+            {"name": "app_test20.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test21.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
                         
             # ... add more
         ]
@@ -427,7 +471,7 @@ class Launcher(Gtk.Application):
      
         GLib.timeout_add_seconds(1, self._update_clock)
         GLib.timeout_add_seconds(1, self._update_battery_val)
-        GLib.timeout_add_seconds(1, self._update_volume_val)  # example values
+        #GLib.timeout_add_seconds(1, self._update_volume_val)  # example values
         GLib.timeout_add_seconds(1, self._update_wifi_val)  # example values
 
         win.set_application(self)
@@ -504,7 +548,98 @@ class Launcher(Gtk.Application):
             return children.index(child)
         except ValueError:
             return 0
+    def setup_volume_controls(self):
+        self.volumecontrol = self.builder.get_object("Volume")
+        self.volumetop = self.builder.get_object("volumetop")
+        
+        if not self.volumecontrol or not self.volumetop:
+            print("volume widgets not found")
+            return
+            
+        self.shared_volume_adjustment = Gtk.Adjustment(
+            value=0.5,
+            lower=0.0,
+            upper=1.0,
+            step_increment=0.01,
+            page_increment=0.05,
+            page_size=0.0
+        )
+        
+        self.volumecontrol.set_adjustment(self.shared_volume_adjustment)
+        self.volumetop.set_adjustment(self.shared_volume_adjustment)
 
+        # initialize from real system volume
+        init_percent = self.get_system_volume_percent()
+        init_value = init_percent / 100.0
+
+        self._updating_volume_ui = True
+        self.shared_volume_adjustment.set_value(init_value)
+        self._updating_volume_ui = False
+
+        self.update_volume_icons(init_percent)
+
+        # connect both widgets
+        self.volumecontrol.connect("value-changed", self.on_volume_changed)
+        self.volumetop.connect("value-changed", self.on_volume_changed)
+
+        # poll real system volume so outside changes get reflected
+        GLib.timeout_add(500, self.sync_volume_from_system)
+        
+        
+    def sync_volume_from_system(self):
+        volume_percent = self.get_system_volume_percent()
+        muted = self.is_system_muted()
+
+        if muted:
+            volume_percent = 0
+
+        ui_value = self.shared_volume_adjustment.get_value()
+        system_value = volume_percent / 100.0
+
+        # only update UI if it actually changed
+        if abs(ui_value - system_value) > 0.01:
+            self._updating_volume_ui = True
+            self.shared_volume_adjustment.set_value(system_value)
+            self._updating_volume_ui = False
+
+        self.update_volume_icons(volume_percent)
+        self._update_volume_icon(volume_percent)
+
+        return True    
+        
+    def get_system_volume_percent(self):
+        try:
+            result = subprocess.run(
+                ["pactl", "get-sink-volume", "@DEFAULT_SINK@"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+
+            # Example line:
+            # Volume: front-left: 49152 /  75% / -7.50 dB, ...
+            matches = re.findall(r'(\d+)%', result.stdout)
+            if matches:
+                return int(matches[0])
+
+        except Exception as e:
+            print(f"Error reading system volume: {e}")
+
+        return 50
+
+    def is_system_muted(self):
+        try:
+            result = subprocess.run(
+                ["pactl", "get-sink-mute", "@DEFAULT_SINK@"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            return result.stdout.strip().endswith("yes")
+        except Exception as e:
+            print(f"Error reading mute state: {e}")
+            return False    
+        
     # ---------- B. Dynamic pages ----------
     def rebuild_pages(self):
         # clear existing pages
@@ -570,15 +705,20 @@ class Launcher(Gtk.Application):
         return box
 
     def launch_app(self, app):
-        
-        # TODO ensure that apps launch only once and prevent further launches
-        
         cmd = app.get("exec")
+        handler_name = app.get("handler")
+        
         if cmd:
-            print("Launching:", app["name"])
             subprocess.Popen([cmd])
-        else:
-            print("No execution path found for", app["name"])
+            return
+        if handler_name:
+            handler = getattr(self, handler_name, None)
+            if callable(handler):
+                handler(None)
+            else:
+                print(f"Handler '{handler_name}' not found")
+            return
+        print(f"No exec or handler defined for {app.get('name', 'unknown app')}")
             
         # This was an alternate solution. Worth looking into for potential changes
         # info = Gio.DesktopAppInfo.new("org.gnome.Calculator.desktop")
@@ -652,17 +792,26 @@ class Launcher(Gtk.Application):
         btn.set_margin_left(3)
         btn.set_margin_right(3)
 
-        # ---- CURRENT BEHAVIOR: dot ----
-        # btn.set_label("●")  # label will be updated by _refresh_nav_active_state()
-
-        # ---- LATER UPGRADE: icon/image ----
-        # Uncomment this when you're ready to switch from dot -> image:
         if app_entry.icon_path and os.path.isfile(app_entry.icon_path):
             img = Gtk.Image.new_from_file(app_entry.icon_path)
+            print(f"Loaded icon for {app_entry.title} from {app_entry.icon_path}")
         else:
             img = Gtk.Image.new_from_icon_name("application-x-executable", Gtk.IconSize.DND)
-        btn.set_label("")     # remove dot
-        btn.add(img)          # show icon
+            print(f"Failed to load icon for {app_entry.title} from {app_entry.icon_path}, using fallback.")
+        #btn.set_label("")     # remove dot
+
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file(app_entry.icon_path)
+
+        scaled = pixbuf.scale_simple(
+            32,
+            32,
+            GdkPixbuf.InterpType.BILINEAR
+        )
+
+        img = Gtk.Image.new_from_pixbuf(scaled)
+        btn.set_image(img)
+
+        #btn.add(img)          # show icon
         btn.show_all()
 
         btn.get_style_context().add_class("nav-icon")
@@ -686,8 +835,8 @@ class Launcher(Gtk.Application):
             ctx = w.get_style_context()
 
             # Dot mode: filled dot for active, empty for inactive
-            if w.get_label() is not None and w.get_label() != "":
-                w.set_label("●" if is_active else "○")
+            # if w.get_label() is not None and w.get_label() != "":
+            #    w.set_label("●" if is_active else "○")
 
             if is_active:
                 ctx.add_class("nav-icon-active")
@@ -723,7 +872,7 @@ class Launcher(Gtk.Application):
         idx = self._current_index()
         #for i, child in enumerate(self.nav_bar.get_children()):
         #    if isinstance(child, Gtk.Button):
-        #        child.set_label("●" if i == idx else "○")
+        #        child.set_label("●" if i == idx else "○")et_label("●" if i == idx else "○")
     
     ###############################################################################                
                 
@@ -786,6 +935,60 @@ class Launcher(Gtk.Application):
         print("Settings button clicked")
         self.content_stack.set_visible_child_name("settings_page")
         
+    def _update_status_page(self):
+        # TODO hook into actual sensors
+        try:
+            #raise ValueError("TESTING")
+            temp_str, hum_str = call_data(True, False, False, False)
+            temp = float(temp_str)
+            hum = float(hum_str)
+            if math.isnan(temp) or math.isnan(hum):
+                raise ValueError("Sensor returned NaN")
+            #print(temp)
+            #print(hum)
+            temp_f = (temp * 9/5) + 32
+            self.temp_label.set_text(f"{temp_f}°F, {temp}°C")
+            self.humidity_label.set_text(f"{hum}%")
+            self.temp_output_stack.set_visible_child_name("temp_label")
+            self.humidity_output_stack.set_visible_child_name("humidity_label")
+            print(f"temp: {temp}, hum: {hum}")
+        except Exception as e:
+            print("Error calling sensor data:", e)
+            temp, hum = "Loading...", "Loading..."  # fallback values
+            print('this bitch errored out')
+            #self.temp_output_stack.set_visible_child_name("temp_spinner")
+            #self.humidity_output_stack.set_visible_child_name("humidity_spinner")
+            self.temp_label.set_text(temp)
+            self.humidity_label.set_text(hum)
+            print(f"t&h: {temp} {hum}")
+
+        try:
+            ValueError("TESTING")
+            brightness = call_data(False, True, False, False)
+            self.brightness_label.set_text(f"{brightness}")
+            self.brightness_output_stack.set_visible_child_name("brightness_label")
+            print(f"brightness: {brightness}")
+        except Exception as e:
+            print("Error calling brightness data:", e)
+            brightness = "Loading..."
+            self.brightness_output_stack.set_visible_child_name("brightness_spinner")
+            self.brightness_label.set_text(brightness)
+            print(f"brightness: {brightness}")
+            
+    def setup_browser(self):
+        if getattr(self, "browser", None) is not None:
+            return
+
+        self.browser = WebKit2.WebView()
+        self.browser_page.pack_start(self.browser, True, True, 0)
+        self.browser_page.show_all()
+
+    def browser_open(self, button=None):
+        self.setup_browser()
+        print("browser clicked")
+        self.browser.load_uri("https://www.google.com")
+        self.shell_stack.set_visible_child_name("browser_page")
+        
     def on_button_clicked(self,widget):
         print("Color Settings button clicked")
         self.popover.popup()
@@ -805,72 +1008,146 @@ class Launcher(Gtk.Application):
         
         print("Selected HEX", hex_color)
         
-        #color_str = f"rgb({red}, {green}, {blue})"
+        self.app_defaults["color"] = hex_color
         
-        css = f"""
-        #main_window
-            {{
-                    background-image : none;
-                    background-color: {hex_color};
-                
-            
-        }}
-        """
-        dynamic_provider.load_from_data(css.encode())
+        self.app_defaults["image"] = ""
+        
+        self.apply_all_styles()
 
     def on_font(self,widget):
        
-        fontupdate = widget.get_font()
-        desc = Pango.FontDescription.from_string(fontupdate)
+        raw_font = widget.get_font()
+        parts = raw_font.split()
         
-        family = desc.get_family()
-        size = int(desc.get_size()/ Pango.SCALE)
-        weight = int(desc.get_weight())
-        style = "italic" if desc.get_style() == Pango.Style.ITALIC else "normal"
-
+        self.app_defaults["font_family"] =  "".join(parts[:-1])
+        self.app_defaults["font_size"]  = parts[-1]
         
-        #font-style: {style};
-        #                    font-weight: {int(weight)};
-        
-        
-        
-        css = f"""
-        #main_window
-            {{
-                    
-                    font-family: "{family}";
-                    font-size: "{size}"px;
-                    
-                    
-                
-            
-        }}
-        """
-        data = css.encode("utf-8")
-        dynamic_provider.load_from_data(css.encode())
+        self.apply_all_styles()
 
     def on_background_file(self,widget):
         filepath = widget.get_filename()
         
         if filepath:
-            css = f"""
-            #main_window
+           self.app_defaults["image"] = filepath
+           self.apply_all_styles()
+    def set_volume(self, volume_percent):
+        try:
+            subprocess.run(
+                ["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{volume_percent}%"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+
+            if volume_percent > 0:
+                subprocess.run(
+                    ["pactl", "set-sink-mute", "@DEFAULT_SINK@", "0"],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+
+        except Exception as e:
+            print(f"Hardware Volume Error: {e}")
+    
+    def get_pi_volume(self):
+        
+        try:
+            result = subprocess.run(
+            ["amixer", "get", "Master"],
+            capture_output = True, text = True
+            )
+            
+            if "[" in result.stdout:
+                val = result.stdout.split("[")[1].split("%")[0]
+                return int(val)
+                
+        except:
+            return 50
+        return 50
+    
+    def on_volume_changed (self, widget, value):
+        if getattr(self, "_updating_volume_ui", False):
+            return
+            
+        volume_percent = int(round(value *100))
+        
+        self.set_volume(volume_percent)
+        self.update_volume_icons(volume_percent)
+        #GLib.idle_add(self.set_volume, volume_percent)
+        
+    def update_volume_icons(self, volume_percent):
+        if volume_percent >= 75:
+            icon_name = "volume_4.png"
+        elif volume_percent >= 50:
+            icon_name = "volume_3.png"
+        elif volume_percent >= 25:
+            icon_name = "volume_2.png"
+        elif volume_percent > 0:
+            icon_name = "volume_1.png"
+        else:
+             icon_name = "volume_0.png"
+        
+        icon_path = os.path.join(BASE_DIR, "icons", icon_name)
+
+        try:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                icon_path,
+                28,
+                28,
+                True
+            )
+
+            for btn in [self.volumecontrol, self.volumetop]:
+                new_icon = Gtk.Image.new_from_pixbuf(pixbuf)
+                btn.set_image(new_icon)
+                btn.set_always_show_image(True)
+
+        except Exception as e:
+            print(f"Error updating volume icons: {e}")
+        
+    def apply_all_styles(self):
+        bg_color = self.app_defaults.get("color", "#000000")
+        css_parts = f"background-color: {self.app_defaults['color']}; "
+        
+        css_data = f"""
+        #main_window{{
+            background-color: {bg_color};
+            background-repeat: no-repeat; 
+            background-position: center; 
+            background-size: cover; 
+        
+        """
+        
+        
+        if self.app_defaults["image"]:
+            css_data += f"background-image: url('{self.app_defaults['image']}');"
+
+        else:
+            css_data += "background-image : none;"
+        css_data += "}\n"
+        css_data += f"""
+        #main_window *
             {{
-                    background-image : url('{filepath}');
-                    background-repeat: no-repeat; 
-                    background-position: center; 
-                    background-size: cover; 
+                    
+                    font-family: "{self.app_defaults['font_family']}", sans-serif;
+                    font-size: {self.app_defaults['font_size']}px;
+                    
+             
                 
             
-            }}
-            """
-        dynamic_provider.load_from_data(css.encode())
-    
-    Gtk.StyleContext.add_provider_for_screen(
-        Gdk.Screen.get_default(),
-        dynamic_provider,
-        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-    )
+        }}
+        """
+        
+        try:
+            databytes = css_data.encode("utf-8")
+            dynamic_provider.load_from_data(databytes, len(databytes))
+        except Exception as e:
+            print(f"Css Syntax Error: {e}")
+        
+   
+        
+
     
 if __name__ == "__main__":
 
