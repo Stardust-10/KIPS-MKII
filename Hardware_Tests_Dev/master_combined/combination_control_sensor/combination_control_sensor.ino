@@ -9,6 +9,7 @@
 HardwareSerial SerialUART32_0(0); // UART0
 HardwareSerial SerialUART32_1(1); // UART1 (unused for now)
 
+/*
 // ---------------- Pins / Constants (DEVELOPMENT - on dev-boards) ----------------
 #define UART_TX_PIN 43 
 #define UART_RX_PIN 44 
@@ -26,9 +27,10 @@ HardwareSerial SerialUART32_1(1); // UART1 (unused for now)
 #define hbPowerPin 16 
 #define tempsda 3 
 #define tempscl 8 
+*/
 
 /////////////PRODUCTION///////////////////////////////////
-/*
+
 #define UART_TX_PIN 37 
 #define UART_RX_PIN 36 
 #define UART_BAUD 115200
@@ -49,7 +51,7 @@ HardwareSerial SerialUART32_1(1); // UART1 (unused for now)
 #define tempsda1 8
 #define tempscl1 9
 
-*/
+
 /////////////////////////////////////////////////
 
 const int ldrPin = 1;
@@ -191,6 +193,8 @@ void processPiCommand(String incoming) {
 // ---------------- Setup ----------------
 void setup() {
   Serial.begin(115200);
+
+  digitalWrite(UART_TX_PIN, LOW);
 
   //Activate UART0 on ESP32
   SerialUART32_0.begin(UART_BAUD, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
