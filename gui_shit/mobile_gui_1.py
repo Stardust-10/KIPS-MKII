@@ -364,7 +364,7 @@ class Launcher(Gtk.Application):
         self.setup_volume_controls()
         
         self.browser_page = self.builder.get_object("browser_page")
-        self.setup_browser()
+        # self.setup_browser()
         self.browser_button = self.builder.get_object("browser")
         self.browser_button.connect("clicked", self.browser_open)
        
@@ -374,6 +374,7 @@ class Launcher(Gtk.Application):
             self.home_icon_eb.connect("button-press-event", self._on_home_icon_clicked)
 
         if self.status_button is not None:
+            #self.status_button.connect("clicked", self._update_status_page)
             self.status_button.connect("clicked", self._on_app_icon_clicked, self.status_app)
         
         if self.apps_button is not None:
@@ -431,11 +432,13 @@ class Launcher(Gtk.Application):
         ]'''
 
         self.apps = [
-            {"name": "calculator", "exec": "galculator", 
+            {"name": "calculator", 
+            "type": "external", 
+            "exec": "galculator", 
             "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
-            {"name": "glade", "exec": "glade",
+            {"name": "glade", "type": "external", "exec": "glade",
             "icon_path": os.path.join(BASE_DIR, "icons", "glade_icon.png")},
-            {"name": "app_test3.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
+            {"name": "browser", "type": "internal", "handler": "browser_open", "icon_path": os.path.join(BASE_DIR, "icons", "google.png")},
             {"name": "app_test4.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
             {"name": "app_test5.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
             {"name": "app_test6.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
@@ -702,15 +705,20 @@ class Launcher(Gtk.Application):
         return box
 
     def launch_app(self, app):
-        
-        # TODO ensure that apps launch only once and prevent further launches
-        
         cmd = app.get("exec")
+        handler_name = app.get("handler")
+        
         if cmd:
-            print("Launching:", app["name"])
             subprocess.Popen([cmd])
-        else:
-            print("No execution path found for", app["name"])
+            return
+        if handler_name:
+            handler = getattr(self, handler_name, None)
+            if callable(handler):
+                handler(None)
+            else:
+                print(f"Handler '{handler_name}' not found")
+            return
+        print(f"No exec or handler defined for {app.get('name', 'unknown app')}")
             
         # This was an alternate solution. Worth looking into for potential changes
         # info = Gio.DesktopAppInfo.new("org.gnome.Calculator.desktop")
@@ -930,14 +938,14 @@ class Launcher(Gtk.Application):
     def _update_status_page(self):
         # TODO hook into actual sensors
         try:
-            raise ValueError("TESTING")
-            temp_str, hum_str = call_data(False, False, False, True)
+            #raise ValueError("TESTING")
+            temp_str, hum_str = call_data(True, False, False, False)
             temp = float(temp_str)
             hum = float(hum_str)
             if math.isnan(temp) or math.isnan(hum):
                 raise ValueError("Sensor returned NaN")
-            print(temp)
-            print(hum)
+            #print(temp)
+            #print(hum)
             temp_f = (temp * 9/5) + 32
             self.temp_label.set_text(f"{temp_f}°F, {temp}°C")
             self.humidity_label.set_text(f"{hum}%")
@@ -968,18 +976,18 @@ class Launcher(Gtk.Application):
             print(f"brightness: {brightness}")
             
     def setup_browser(self):
+        if getattr(self, "browser", None) is not None:
+            return
+
         self.browser = WebKit2.WebView()
         self.browser_page.pack_start(self.browser, True, True, 0)
         self.browser_page.show_all()
 
-    def browser_open(self, button):
-        
+    def browser_open(self, button=None):
+        self.setup_browser()
         print("browser clicked")
-        
         self.browser.load_uri("https://www.google.com")
-        
         self.shell_stack.set_visible_child_name("browser_page")
-        
         
     def on_button_clicked(self,widget):
         print("Color Settings button clicked")
