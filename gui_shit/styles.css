@@ -45,10 +45,9 @@ window.desktop {
    Clock / prominent labels
    ============================================================ */
 
-.clock-app-label {
+#main_window #clock_app_label {
     font-family: "Monospace";
     font-size: 256px;
-    font-weight: bold;
     color: #3481aa;
 }
 

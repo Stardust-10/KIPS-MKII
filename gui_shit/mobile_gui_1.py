@@ -352,7 +352,10 @@ class Launcher(Gtk.Application):
         self.radio_button = self.builder.get_object("radio_button")
         self.heartbeat_button = self.builder.get_object("heartbeat_button")
         self.button = self.builder.get_object("Color")
-
+        self.autobrightness_toggle = self.builder.get_object("autobrightness_switch")
+        self.manual_brightness_tab = self.builder.get_object("manual_brightness_tab")
+        self.browser_exit_button = self.builder.get_object("browser_exit_button")
+        
         self.button.connect("color-set", self.on_color_chosen)
         
         self.brightness = self.builder.get_object("brightness")
@@ -393,7 +396,14 @@ class Launcher(Gtk.Application):
             self.clock_button.connect("clicked", self._on_clock_button_clicked)  
 
         if self.clock_exit_button is not None:
-            self.clock_exit_button.connect("clicked", self._on_clock_exit_button_clicked)  # example, replace with actual app entry
+            self.clock_exit_button.connect("clicked", self._on_exit_button_clicked)  # example, replace with actual app entry
+        
+        if self.browser_exit_button is not None:
+            self.browser_exit_button.connect("clicked", self._on_exit_button_clicked)
+        
+        if self.autobrightness_toggle is not None:
+            self.autobrightness_toggle.connect("notify::active", self._on_brightness_auto)
+
         
         #self._update_status_page()
         
@@ -927,13 +937,21 @@ class Launcher(Gtk.Application):
         print("Clock button clicked")
         self.shell_stack.set_visible_child_name("clock_fullscreen")
 
-    def _on_clock_exit_button_clicked(self, button):
+    def _on_exit_button_clicked(self, button):
         print("Clock exit button clicked")
         self.shell_stack.set_visible_child_name("main_shell")
 
     def _on_settings_button_clicked(self, button):
         print("Settings button clicked")
         self.content_stack.set_visible_child_name("settings_page")
+        
+    def _on_brightness_auto(self, switch, _):
+        if self.autobrightness_toggle.get_active():
+            self.manual_brightness_tab.set_visible_child_name("brightness_cover")
+            # SET TO READ FROM LDR FOR BRIGHTNESS
+        else:
+            # POLL FROM SLIDER TO DETERMINE BRIGHTNESS VALUE
+            self.manual_brightness_tab.set_visible_child_name("manual_brightness")
         
     def _update_status_page(self):
         # TODO hook into actual sensors
