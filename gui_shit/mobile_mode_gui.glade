@@ -232,7 +232,7 @@ audio-volume-medium-symbolic</property>
                                 <property name="can-focus">False</property>
                                 <child>
                                   <object class="GtkButton" id="status_button">
-                                    <property name="label" translatable="yes">Stats</property>
+                                    <property name="label" translatable="yes">button</property>
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <property name="receives-default">True</property>
@@ -908,6 +908,18 @@ audio-volume-medium-symbolic</property>
                                     <property name="relief">none</property>
                                     <property name="orientation">vertical</property>
                                     <property name="value">0.05</property>
+                                    <child internal-child="plus_button">
+                                      <object class="GtkButton">
+                                        <property name="can-focus">False</property>
+                                        <property name="receives-default">False</property>
+                                      </object>
+                                    </child>
+                                    <child internal-child="minus_button">
+                                      <object class="GtkButton">
+                                        <property name="can-focus">False</property>
+                                        <property name="receives-default">False</property>
+                                      </object>
+                                    </child>
                                   </object>
                                   <packing>
                                     <property name="expand">True</property>
@@ -1030,6 +1042,7 @@ audio-volume-medium-symbolic</property>
                                         <property name="can-focus">True</property>
                                         <property name="adjustment">adjustment1</property>
                                         <property name="round-digits">1</property>
+                                        <property name="digits">0</property>
                                       </object>
                                       <packing>
                                         <property name="expand">True</property>
@@ -1119,6 +1132,7 @@ audio-volume-medium-symbolic</property>
                                 <property name="orientation">vertical</property>
                                 <child>
                                   <object class="GtkColorButton" id="font_color">
+                                    <property name="name">font_color</property>
                                     <property name="visible">True</property>
                                     <property name="can-focus">True</property>
                                     <property name="receives-default">True</property>
@@ -1285,8 +1299,8 @@ audio-volume-medium-symbolic</property>
                                 <property name="can-focus">False</property>
                                 <property name="orientation">vertical</property>
                                 <child>
-                                  <object class="GtkColorButton" id="Color">
-                                    <property name="name">Color</property>
+                                  <object class="GtkColorButton" id="background_color">
+                                    <property name="name">background_color</property>
                                     <property name="visible">True</property>
                                     <property name="can-focus">True</property>
                                     <property name="receives-default">True</property>

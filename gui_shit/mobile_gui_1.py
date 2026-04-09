@@ -351,12 +351,12 @@ class Launcher(Gtk.Application):
         self.settings_button = self.builder.get_object("settings_button")
         self.radio_button = self.builder.get_object("radio_button")
         self.heartbeat_button = self.builder.get_object("heartbeat_button")
-        self.button = self.builder.get_object("Color")
+        self.font_color_button = self.builder.get_object("font_color")
         self.autobrightness_toggle = self.builder.get_object("autobrightness_switch")
         self.manual_brightness_tab = self.builder.get_object("manual_brightness_tab")
         self.browser_exit_button = self.builder.get_object("browser_exit_button")
         
-        self.button.connect("color-set", self.on_color_chosen)
+        self.font_color_button.connect("color-set", self.on_color_chosen)
         
         self.brightness = self.builder.get_object("brightness")
         self.background_image = self.builder.get_object("background_image")
@@ -370,7 +370,20 @@ class Launcher(Gtk.Application):
         # self.setup_browser()
         self.browser_button = self.builder.get_object("browser")
         self.browser_button.connect("clicked", self.browser_open)
-       
+        self.brightness_slider = self.builder.get_object("brightness")
+        self.brightness_slider.connect("value-changed" , self.on_brightness)
+        #self.font_color_select = self.builder_
+        self.backlight_path  ="/sys/class/backlight/10-0045/brightness"
+
+        radio_gif = os.path.join(BASE_DIR, "icons", "radioo_128x128.gif")
+        self._set_button_media(
+            self.radio_button,
+            radio_gif,
+            size_px=56,
+            button_w=96,
+            button_h=96,
+            keep_label=True
+        )
 
         if self.home_icon_eb is not None:
             self.home_icon_eb.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
@@ -449,7 +462,7 @@ class Launcher(Gtk.Application):
             {"name": "glade", "type": "external", "exec": "glade",
             "icon_path": os.path.join(BASE_DIR, "icons", "glade_icon.png")},
             {"name": "browser", "type": "internal", "handler": "browser_open", "icon_path": os.path.join(BASE_DIR, "icons", "google.png")},
-            {"name": "app_test4.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test4.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
             {"name": "app_test5.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
             {"name": "app_test6.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
             {"name": "app_test7.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
@@ -899,6 +912,65 @@ class Launcher(Gtk.Application):
         print(children[next_idx])
         self.content_stack.set_visible_child(children[next_idx])
     
+    def _make_button_image(self, file_path, size_px=64):
+        image = Gtk.Image()
+
+        if not file_path or not os.path.isfile(file_path):
+            return image
+
+        ext = os.path.splitext(file_path)[1].lower()
+
+        try:
+            if ext == ".gif":
+                loader = GdkPixbuf.PixbufLoader.new_with_type("gif")
+                loader.set_size(size_px, size_px)
+
+                with open(file_path, "rb") as f:
+                    loader.write(f.read())
+
+                loader.close()
+                image.set_from_animation(loader.get_animation())
+            else:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    file_path,
+                    width=size_px,
+                    height=size_px,
+                    preserve_aspect_ratio=True
+                )
+                image.set_from_pixbuf(pixbuf)
+
+            image.set_size_request(size_px, size_px)
+            image.set_hexpand(False)
+            image.set_vexpand(False)
+            image.set_halign(Gtk.Align.CENTER)
+            image.set_valign(Gtk.Align.CENTER)
+
+        except Exception as e:
+            print(f"Error loading button image '{file_path}': {e}")
+
+        return image
+
+
+    def _set_button_media(self, button, file_path, size_px=64, button_w=100, button_h=100, keep_label=True):
+        if button is None:
+            return
+
+        image = self._make_button_image(file_path, size_px=size_px)
+
+        button.set_image(image)
+        button.set_always_show_image(True)
+        button.set_image_position(Gtk.PositionType.TOP)
+
+        button.set_size_request(button_w, button_h)
+        button.set_hexpand(False)
+        button.set_vexpand(False)
+        button.set_halign(Gtk.Align.CENTER)
+        button.set_valign(Gtk.Align.CENTER)
+        button.set_relief(Gtk.ReliefStyle.NONE)
+
+        if not keep_label:
+            button.set_label("")
+    
     def _on_home_icon_clicked(self, _widget, _event):
         # SWAP TO: 
         self.content_stack.set_visible_child_name("home_stack")
@@ -948,11 +1020,47 @@ class Launcher(Gtk.Application):
     def _on_brightness_auto(self, switch, _):
         if self.autobrightness_toggle.get_active():
             self.manual_brightness_tab.set_visible_child_name("brightness_cover")
+            self.start_auto_brightness()
             # SET TO READ FROM LDR FOR BRIGHTNESS
         else:
             # POLL FROM SLIDER TO DETERMINE BRIGHTNESS VALUE
             self.manual_brightness_tab.set_visible_child_name("manual_brightness")
-        
+            self.stop_auto_brightness()
+    def start_auto_brightness(self):
+        print("Auto brightness started")
+    def stop_auto_brightness(self):
+        print("Stop auto brightness")
+        low1 = 0 #low of slider
+        low2 = 6 # bottom bound of screen brightness
+        high1 = 100 #where we want to stop scale
+        high2 = 74 #max bound of screen brightness before cutoff
+        cmd = f'cat {self.backlight_path}'
+        hw_val = subprocess.check_output(cmd, shell = True).decode().strip()
+        hw_val = int(hw_val)
+        if hw_val == 255:
+            hw_val = high2
+        val = int(((hw_val *(high1 - low1))/(high2-low2)) - low2 +low1)
+        #set value of slider to val
+        self.on_brightness(self.brightness_slider)
+        self.brightness.set_value(val)
+    def on_brightness(self,slider):
+        val = slider.get_value()
+        low1 = 0 #low of slider
+        low2 = 6 # bottom bound of screen brightness
+        high1 = 100 #where we want to stop scale
+        high2 = 74 #max bound of screen brightness before cutoff
+        if val <= 89:
+            hw_val = low2 + (val- low1) * (high2-low2) /(high1-low1)
+        else:
+            hw_val = 255
+        self.apply_brightness(int(hw_val))
+    def apply_brightness (self , level):
+          try:
+            cmd = f'echo {level} | sudo tee {self.backlight_path}'
+            subprocess.run(cmd, shell = True, check = True, capture_output = True)
+            
+          except Exception as e:
+            print(f"brightness error: {e}")
     def _update_status_page(self):
         # TODO hook into actual sensors
         try:
