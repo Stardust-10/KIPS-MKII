@@ -351,12 +351,12 @@ class Launcher(Gtk.Application):
         self.settings_button = self.builder.get_object("settings_button")
         self.radio_button = self.builder.get_object("radio_button")
         self.heartbeat_button = self.builder.get_object("heartbeat_button")
-        self.font_color_button = self.builder.get_object("font_color")
+        self.background_color_button = self.builder.get_object("background_color")
         self.autobrightness_toggle = self.builder.get_object("autobrightness_switch")
         self.manual_brightness_tab = self.builder.get_object("manual_brightness_tab")
         self.browser_exit_button = self.builder.get_object("browser_exit_button")
         
-        self.font_color_button.connect("color-set", self.on_color_chosen)
+        self.background_color_button.connect("color-set", self.on_color_chosen)
         
         self.brightness = self.builder.get_object("brightness")
         self.background_image = self.builder.get_object("background_image")
@@ -372,7 +372,7 @@ class Launcher(Gtk.Application):
         self.browser_button.connect("clicked", self.browser_open)
         self.brightness_slider = self.builder.get_object("brightness")
         self.brightness_slider.connect("value-changed" , self.on_brightness)
-        #self.font_color_select = self.builder_
+        #self.font_color_select = self.builder.get_object(font_color)
         self.backlight_path  ="/sys/class/backlight/10-0045/brightness"
 
         radio_gif = os.path.join(BASE_DIR, "icons", "radioo_128x128.gif")
@@ -761,8 +761,8 @@ class Launcher(Gtk.Application):
             dot.set_focus_on_click(False)
             dot.set_can_focus(False)
             
-            dot.set_margin_left(3)
-            dot.set_margin_right(3)
+            dot.set_margin_start(3)
+            dot.set_margin_end(3)
 
             #dot.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
             dot.connect("button-press-event", self._on_dot_clicked, i)
@@ -812,8 +812,8 @@ class Launcher(Gtk.Application):
         btn.set_relief(Gtk.ReliefStyle.NONE)
         btn.set_focus_on_click(False)
         btn.set_can_focus(False)
-        btn.set_margin_left(3)
-        btn.set_margin_right(3)
+        btn.set_margin_start(3)
+        btn.set_margin_end(3)
 
         if app_entry.icon_path and os.path.isfile(app_entry.icon_path):
             img = Gtk.Image.new_from_file(app_entry.icon_path)
@@ -1115,10 +1115,7 @@ class Launcher(Gtk.Application):
         self.browser.load_uri("https://www.google.com")
         self.shell_stack.set_visible_child_name("browser_page")
         
-    def on_button_clicked(self,widget):
-        print("Color Settings button clicked")
-        self.popover.popup()
-        
+
     def on_color_chosen(self,widget):
        
         rgba = widget.get_rgba()
