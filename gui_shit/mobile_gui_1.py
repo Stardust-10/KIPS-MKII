@@ -351,9 +351,12 @@ class Launcher(Gtk.Application):
         self.settings_button = self.builder.get_object("settings_button")
         self.radio_button = self.builder.get_object("radio_button")
         self.heartbeat_button = self.builder.get_object("heartbeat_button")
-        self.button = self.builder.get_object("Color")
-
-        self.button.connect("color-set", self.on_color_chosen)
+        self.background_color_button = self.builder.get_object("background_color")
+        self.autobrightness_toggle = self.builder.get_object("autobrightness_switch")
+        self.manual_brightness_tab = self.builder.get_object("manual_brightness_tab")
+        self.browser_exit_button = self.builder.get_object("browser_exit_button")
+        
+        self.background_color_button.connect("color-set", self.on_color_chosen)
         
         self.brightness = self.builder.get_object("brightness")
         self.background_image = self.builder.get_object("background_image")
@@ -366,8 +369,22 @@ class Launcher(Gtk.Application):
         self.browser_page = self.builder.get_object("browser_page")
         # self.setup_browser()
         self.browser_button = self.builder.get_object("browser")
-        self.browser_button.connect("clicked", self.browser_open)
-       
+        #self.browser_button.connect("clicked", self.browser_open)
+        self.brightness_slider = self.builder.get_object("brightness")
+        self.brightness_slider.connect("value-changed" , self.on_brightness)
+        self.font_color_select = self.builder.get_object("font_color")
+        self.font_color_select.connect("color-set", self.on_font_color_chosen)
+        self.backlight_path  ="/sys/class/backlight/10-0045/brightness"
+
+        radio_gif = os.path.join(BASE_DIR, "icons", "radio_64x64.gif")
+        self._set_button_media(
+            self.radio_button,
+            radio_gif,
+            size_px=56,
+            button_w=96,
+            button_h=96,
+            keep_label=True
+        )
 
         if self.home_icon_eb is not None:
             self.home_icon_eb.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
@@ -393,7 +410,14 @@ class Launcher(Gtk.Application):
             self.clock_button.connect("clicked", self._on_clock_button_clicked)  
 
         if self.clock_exit_button is not None:
-            self.clock_exit_button.connect("clicked", self._on_clock_exit_button_clicked)  # example, replace with actual app entry
+            self.clock_exit_button.connect("clicked", self._on_exit_button_clicked)  # example, replace with actual app entry
+        
+        if self.browser_exit_button is not None:
+            self.browser_exit_button.connect("clicked", self._on_exit_button_clicked)
+        
+        if self.autobrightness_toggle is not None:
+            self.autobrightness_toggle.connect("notify::active", self._on_brightness_auto)
+
         
         #self._update_status_page()
         
@@ -439,7 +463,7 @@ class Launcher(Gtk.Application):
             {"name": "glade", "type": "external", "exec": "glade",
             "icon_path": os.path.join(BASE_DIR, "icons", "glade_icon.png")},
             {"name": "browser", "type": "internal", "handler": "browser_open", "icon_path": os.path.join(BASE_DIR, "icons", "google.png")},
-            {"name": "app_test4.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
+            {"name": "app_test4.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
             {"name": "app_test5.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
             {"name": "app_test6.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
             {"name": "app_test7.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
@@ -738,8 +762,8 @@ class Launcher(Gtk.Application):
             dot.set_focus_on_click(False)
             dot.set_can_focus(False)
             
-            dot.set_margin_left(3)
-            dot.set_margin_right(3)
+            dot.set_margin_start(3)
+            dot.set_margin_end(3)
 
             #dot.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
             dot.connect("button-press-event", self._on_dot_clicked, i)
@@ -775,12 +799,11 @@ class Launcher(Gtk.Application):
             seen.add(app.app_id)
             unique.append(app)
         return unique
-    
+        
     def _make_nav_widget_for_app(self, app_entry):
         """
-        Creates the nav widget ONCE and stores it in app_entry.nav_widget.
-        For now: dot button.
-        Later: swap the label for an image (icon_path) without changing callers.
+        Creates the nav widget ONCE.
+        Forces the 64px source into a 32px buffer to keep the header small.
         """
         if app_entry.nav_widget is not None:
             return app_entry.nav_widget
@@ -789,39 +812,34 @@ class Launcher(Gtk.Application):
         btn.set_relief(Gtk.ReliefStyle.NONE)
         btn.set_focus_on_click(False)
         btn.set_can_focus(False)
-        btn.set_margin_left(3)
-        btn.set_margin_right(3)
+        btn.set_margin_start(3)
+        btn.set_margin_end(3)
 
         if app_entry.icon_path and os.path.isfile(app_entry.icon_path):
-            img = Gtk.Image.new_from_file(app_entry.icon_path)
-            print(f"Loaded icon for {app_entry.title} from {app_entry.icon_path}")
+            # MINIMAL EDIT: Use at_scale(32, 32)
+            # Even if the file is 64px, this creates a 32px snapshot.
+            # A 32px image physically cannot force the header to be "massive."
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                app_entry.icon_path, 32, 32, True
+            )
+            img = Gtk.Image.new_from_pixbuf(pixbuf)
         else:
             img = Gtk.Image.new_from_icon_name("application-x-executable", Gtk.IconSize.DND)
-            print(f"Failed to load icon for {app_entry.title} from {app_entry.icon_path}, using fallback.")
-        #btn.set_label("")     # remove dot
 
-        pixbuf = GdkPixbuf.Pixbuf.new_from_file(app_entry.icon_path)
+        # Ensure the widget itself also reports 32px to the header layout
+        img.set_pixel_size(32)
+        img.set_size_request(32, 32)
 
-        scaled = pixbuf.scale_simple(
-            32,
-            32,
-            GdkPixbuf.InterpType.BILINEAR
-        )
-
-        img = Gtk.Image.new_from_pixbuf(scaled)
         btn.set_image(img)
-
-        #btn.add(img)          # show icon
+        btn.set_always_show_image(True)
         btn.show_all()
-
         btn.get_style_context().add_class("nav-icon")
 
-        # IMPORTANT: your file has an _on_nav_icon_clicked that takes (widget,event,app_entry)
         btn.connect("button-press-event", self._on_nav_icon_clicked, app_entry)
 
         app_entry.nav_widget = btn
         return btn
-
+        
     def _refresh_nav_active_state(self):
         """Applies active/inactive styling (and dot fill) based on current stack page."""
         current = self.content_stack.get_visible_child_name()
@@ -888,6 +906,65 @@ class Launcher(Gtk.Application):
         next_idx = (idx + 1) % len(children)
         print(children[next_idx])
         self.content_stack.set_visible_child(children[next_idx])
+
+    def _make_button_image(self, file_path, size_px=64):
+        
+        """
+        Handles animated GIFs natively.
+        Best performance when the source file is already scaled to size_px.
+        """
+        image = Gtk.Image()
+
+        if not file_path or not os.path.isfile(file_path):
+            return image
+
+        ext = os.path.splitext(file_path)[1].lower()
+
+        try:
+            if ext == ".gif":
+                # MINIMAL EDIT: Use the native animation loader.
+                # This bypasses the math-heavy manual scaling logic.
+                anim = GdkPixbuf.PixbufAnimation.new_from_file(file_path)
+                image.set_from_animation(anim)
+            else:
+                # Standard static load
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    file_path, size_px, size_px, True
+                )
+                image.set_from_pixbuf(pixbuf)
+
+            # Enforce size consistency
+            image.set_size_request(size_px, size_px)
+            image.set_hexpand(False)
+            image.set_vexpand(False)
+            image.set_halign(Gtk.Align.CENTER)
+            image.set_valign(Gtk.Align.CENTER)
+
+        except Exception as e:
+            print(f"Error loading button image '{file_path}': {e}")
+            image.set_from_icon_name("image-missing", Gtk.IconSize.BUTTON)
+
+        return image
+
+    def _set_button_media(self, button, file_path, size_px=64, button_w=100, button_h=100, keep_label=True):
+        if button is None:
+            return
+
+        image = self._make_button_image(file_path, size_px=size_px)
+
+        button.set_image(image)
+        button.set_always_show_image(True)
+        button.set_image_position(Gtk.PositionType.TOP)
+
+        button.set_size_request(button_w, button_h)
+        button.set_hexpand(False)
+        button.set_vexpand(False)
+        button.set_halign(Gtk.Align.CENTER)
+        button.set_valign(Gtk.Align.CENTER)
+        button.set_relief(Gtk.ReliefStyle.NONE)
+
+        if not keep_label:
+            button.set_label("")
     
     def _on_home_icon_clicked(self, _widget, _event):
         # SWAP TO: 
@@ -927,7 +1004,7 @@ class Launcher(Gtk.Application):
         print("Clock button clicked")
         self.shell_stack.set_visible_child_name("clock_fullscreen")
 
-    def _on_clock_exit_button_clicked(self, button):
+    def _on_exit_button_clicked(self, button):
         print("Clock exit button clicked")
         self.shell_stack.set_visible_child_name("main_shell")
 
@@ -935,6 +1012,50 @@ class Launcher(Gtk.Application):
         print("Settings button clicked")
         self.content_stack.set_visible_child_name("settings_page")
         
+    def _on_brightness_auto(self, switch, _):
+        if self.autobrightness_toggle.get_active():
+            self.manual_brightness_tab.set_visible_child_name("brightness_cover")
+            self.start_auto_brightness()
+            # SET TO READ FROM LDR FOR BRIGHTNESS
+        else:
+            # POLL FROM SLIDER TO DETERMINE BRIGHTNESS VALUE
+            self.manual_brightness_tab.set_visible_child_name("manual_brightness")
+            self.stop_auto_brightness()
+    def start_auto_brightness(self):
+        print("Auto brightness started")
+    def stop_auto_brightness(self):
+        print("Stop auto brightness")
+        low1 = 0 #low of slider
+        low2 = 6 # bottom bound of screen brightness
+        high1 = 100 #where we want to stop scale
+        high2 = 74 #max bound of screen brightness before cutoff
+        cmd = f'cat {self.backlight_path}'
+        hw_val = subprocess.check_output(cmd, shell = True).decode().strip()
+        hw_val = int(hw_val)
+        if hw_val == 255:
+            hw_val = high2
+        val = int(((hw_val *(high1 - low1))/(high2-low2)) - low2 +low1)
+        #set value of slider to val
+        self.on_brightness(self.brightness_slider)
+        self.brightness.set_value(val)
+    def on_brightness(self,slider):
+        val = slider.get_value()
+        low1 = 0 #low of slider
+        low2 = 6 # bottom bound of screen brightness
+        high1 = 100 #where we want to stop scale
+        high2 = 74 #max bound of screen brightness before cutoff
+        if val <= 89:
+            hw_val = low2 + (val- low1) * (high2-low2) /(high1-low1)
+        else:
+            hw_val = 255
+        self.apply_brightness(int(hw_val))
+    def apply_brightness (self , level):
+          try:
+            cmd = f'echo {level} | sudo tee {self.backlight_path}'
+            subprocess.run(cmd, shell = True, check = True, capture_output = True)
+            
+          except Exception as e:
+            print(f"brightness error: {e}")
     def _update_status_page(self):
         # TODO hook into actual sensors
         try:
@@ -989,10 +1110,8 @@ class Launcher(Gtk.Application):
         self.browser.load_uri("https://www.google.com")
         self.shell_stack.set_visible_child_name("browser_page")
         
-    def on_button_clicked(self,widget):
-        print("Color Settings button clicked")
-        self.popover.popup()
-        
+
+    #background color
     def on_color_chosen(self,widget):
        
         rgba = widget.get_rgba()
@@ -1001,16 +1120,29 @@ class Launcher(Gtk.Application):
         int(rgba.red*255),
         int(rgba.green*255),
         int(rgba.blue*255)
-        
-        
         )
-        
-        
-        print("Selected HEX", hex_color)
+                        
+        print("Selected background HEX", hex_color)
         
         self.app_defaults["color"] = hex_color
         
         self.app_defaults["image"] = ""
+        
+        self.apply_all_styles()
+    def on_font_color_chosen(self,widget):
+       
+        rgba = widget.get_rgba()
+        
+        hex_color = "#{:02x}{:02x}{:02x}".format(
+        int(rgba.red*255),
+        int(rgba.green*255),
+        int(rgba.blue*255)
+        )
+        
+        
+        print("Selected font HEX", hex_color)
+        
+        self.app_defaults["font_color"] = hex_color
         
         self.apply_all_styles()
 
@@ -1107,47 +1239,48 @@ class Launcher(Gtk.Application):
             print(f"Error updating volume icons: {e}")
         
     def apply_all_styles(self):
-        bg_color = self.app_defaults.get("color", "#000000")
-        css_parts = f"background-color: {self.app_defaults['color']}; "
-        
+        bg_color = self.app_defaults.get("color", "#002f00")
+        font_color = self.app_defaults.get("font_color", "#00ee00") # Default to white
+        font_family = self.app_defaults.get("font_family", "sans-serif")
+        font_size = self.app_defaults.get("font_size", "12")
+
+        # Style for the main window container
         css_data = f"""
-        #main_window{{
+        #main_window {{
             background-color: {bg_color};
             background-repeat: no-repeat; 
             background-position: center; 
             background-size: cover; 
-        
         """
-        
-        
-        if self.app_defaults["image"]:
-            css_data += f"background-image: url('{self.app_defaults['image']}');"
 
+        if self.app_defaults.get("image"):
+            css_data += f"background-image: url('{self.app_defaults['image']}');"
         else:
-            css_data += "background-image : none;"
+            css_data += "background-image: none;"
+
         css_data += "}\n"
+
+        # Style for all children (Fonts)
         css_data += f"""
-        #main_window *
-            {{
-                    
-                    font-family: "{self.app_defaults['font_family']}", sans-serif;
-                    font-size: {self.app_defaults['font_size']}px;
-                    
-             
-                
-            
+        #main_window * {{
+            font-family: "{font_family}", sans-serif;
+            font-size: {font_size}px;
+            color: {font_color};
         }}
         """
         
         try:
             databytes = css_data.encode("utf-8")
+            # For GTK 3, load_from_data ofte
             dynamic_provider.load_from_data(databytes, len(databytes))
         except Exception as e:
             print(f"Css Syntax Error: {e}")
         
    
         
-
+    def on_exit_clicked(self,widget):
+        print("Shuting down im out bro")
+        sys.exit(0)
     
 if __name__ == "__main__":
 
