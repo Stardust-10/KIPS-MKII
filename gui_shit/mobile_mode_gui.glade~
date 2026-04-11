@@ -1746,7 +1746,7 @@ audio-volume-medium-symbolic</property>
                                 <property name="valign">center</property>
                                 <property name="max-length">10</property>
                                 <property name="max-width-chars">6</property>
-                                <property name="secondary-icon-stock">None</property>
+                                <property name="secondary-icon-stock">gtk-save</property>
                               </object>
                               <packing>
                                 <property name="left-attach">1</property>

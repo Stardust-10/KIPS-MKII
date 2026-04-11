@@ -1,0 +1,105 @@
+    
+    def on_color_chosen(self,widget):
+       
+        rgba = widget.get_rgba()
+        
+        hex_color = "#{:02x}{:02x}{:02x}".format(
+        int(rgba.red*255),
+        int(rgba.green*255),
+        int(rgba.blue*255)
+        
+        
+        )
+        
+        
+        print("Selected HEX", hex_color)
+        
+        #color_str = f"rgb({red}, {green}, {blue})"
+        
+        css = f"""
+        #main_window 
+            {{
+                    background-image : none;
+                    background-color: {hex_color};
+                
+            
+        }}
+        """
+        dynamic_provider.load_from_data(css.encode())
+
+    def on_font(self,widget):
+       
+        raw_font = widget.get_font()
+        parts = raw_font.split()
+        
+        family =  "".join(parts[:-1])
+        size = parts[-1]
+        
+
+        
+        #font-style: {style};
+        #                    font-weight: {int(weight)};
+        
+        
+        
+        css = f"""
+         #main_window 
+            {{
+                    background-image : none;
+                    background-color: {hex_color};
+                
+            
+        }}
+        
+        #main_window *
+            {{
+                    
+                    font-family: "{family}", sans-serif;
+                    font-size: {size}px;
+                    
+                    
+                
+            
+        }}
+        """
+        data = css.encode("utf-8")
+        dynamic_provider.load_from_data(css.encode())
+
+    def on_background_file(self,widget):
+        filepath = widget.get_filename()
+        
+        if filepath:
+            css = f"""
+            #main_window 
+            {{
+                    background-image : url('{filepath}');
+                    background-repeat: no-repeat; 
+                    background-position: center; 
+                    background-size: cover; 
+                
+            
+            }}
+            """
+        dynamic_provider.load_from_data(css.encode())
+    
+    Gtk.StyleContext.add_provider_for_screen(
+        Gdk.Screen.get_default(),
+        dynamic_provider,
+        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+    )
+
+
+
+
+ self.settings_button = self.builder.get_object("settings_button")
+        self.radio_button = self.builder.get_object("radio_button")
+        self.button = self.builder.get_object("Color")
+
+        self.button.connect("color-set", self.on_color_chosen)
+        
+        self.brightness = self.builder.get_object("brightness")
+        self.background_image = self.builder.get_object("background_image")
+        self.background_image.connect("file-set", self.on_background_file)
+        self.font = self.builder.get_object("Font")
+        self.font.connect("font-set", self.on_font)
+       
