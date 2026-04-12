@@ -339,8 +339,8 @@ class Launcher(Gtk.Application):
         self.temp_output_stack = self.builder.get_object("temp_output_stack")
         self.humidity_label = self.builder.get_object("humidity_label")
         self.humidity_output_stack = self.builder.get_object("humidity_output_stack")
-        self.brightness_label = self.builder.get_object("brightness_label")
-        self.brightness_output_stack = self.builder.get_object("brightness_output_stack")
+        #self.brightness_label = self.builder.get_object("brightness_label")
+        #self.brightness_output_stack = self.builder.get_object("brightness_output_stack")
         self.nav_bar = self.builder.get_object("nav_bar")
         self.home_icon_eb = self.builder.get_object("home_icon_eb")
         self.status_button = self.builder.get_object("status_button")
@@ -1215,14 +1215,14 @@ class Launcher(Gtk.Application):
         try:
             ValueError("TESTING")
             brightness = call_data(False, True, False, False)
-            self.brightness_label.set_text(f"{brightness}")
-            self.brightness_output_stack.set_visible_child_name("brightness_label")
+            #self.brightness_label.set_text(f"{brightness}")
+            #self.brightness_output_stack.set_visible_child_name("brightness_label")
             print(f"brightness: {brightness}")
         except Exception as e:
             print("Error calling brightness data:", e)
             brightness = "Loading..."
-            self.brightness_output_stack.set_visible_child_name("brightness_spinner")
-            self.brightness_label.set_text(brightness)
+            #self.brightness_output_stack.set_visible_child_name("brightness_spinner")
+            #self.brightness_label.set_text(brightness)
             print(f"brightness: {brightness}")
             
     def setup_browser(self):
