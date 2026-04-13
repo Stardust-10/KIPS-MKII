@@ -1612,68 +1612,6 @@ audio-volume-medium-symbolic</property>
                                 <property name="position">3</property>
                               </packing>
                             </child>
-                            <child>
-                              <object class="GtkBox">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="orientation">vertical</property>
-                                <child>
-                                  <object class="GtkLabel" id="brightness_label_static">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="label" translatable="yes">Brightness:</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkStack" id="brightness_output_stack">
-                                    <property name="name">brightness_output_stack</property>
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="transition-type">crossfade</property>
-                                    <child>
-                                      <object class="GtkSpinner" id="brightness_spinner">
-                                        <property name="name">brightness_spinner</property>
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="active">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="name">brightness_spinner</property>
-                                        <property name="title" translatable="yes">page1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="brightness_label">
-                                        <property name="name">brightness_label</property>
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="label" translatable="yes">Loading...</property>
-                                      </object>
-                                      <packing>
-                                        <property name="name">brightness_label</property>
-                                        <property name="title" translatable="yes">page0</property>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                              </object>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">4</property>
-                              </packing>
-                            </child>
                           </object>
                           <packing>
                             <property name="name">page0</property>
@@ -1723,6 +1661,8 @@ audio-volume-medium-symbolic</property>
                           <object class="GtkGrid">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
+                            <property name="halign">center</property>
+                            <property name="valign">center</property>
                             <child>
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
@@ -1737,14 +1677,14 @@ audio-volume-medium-symbolic</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry">
+                              <object class="GtkEntry" id="manual_radio_input">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="halign">center</property>
                                 <property name="valign">center</property>
                                 <property name="max-length">10</property>
                                 <property name="max-width-chars">6</property>
-                                <property name="secondary-icon-stock">gtk-dialog-error</property>
+                                <property name="secondary-icon-stock">None</property>
                               </object>
                               <packing>
                                 <property name="left-attach">1</property>
@@ -1752,13 +1692,15 @@ audio-volume-medium-symbolic</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton">
+                              <object class="GtkButton" id="radio_enter">
                                 <property name="label" translatable="yes">Enter</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
+                                <property name="has-tooltip">True</property>
                                 <property name="halign">center</property>
                                 <property name="valign">start</property>
+                                <signal name="clicked" handler="freq_entered" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">1</property>
@@ -1766,12 +1708,12 @@ audio-volume-medium-symbolic</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton">
+                              <object class="GtkButton" id="AM_FM_Button">
                                 <property name="label" translatable="yes">AM/FM</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
-                                <property name="halign">center</property>
+                                <property name="halign">end</property>
                                 <property name="valign">center</property>
                               </object>
                               <packing>
@@ -2264,36 +2206,5 @@ audio-volume-medium-symbolic</property>
     <property name="upper">100</property>
     <property name="step-increment">1</property>
     <property name="page-increment">10</property>
-  </object>
-  <object class="GtkStack" id="brightness_output_stack1">
-    <property name="name">brightness_output_stack</property>
-    <property name="visible">True</property>
-    <property name="can-focus">False</property>
-    <property name="transition-type">crossfade</property>
-    <child>
-      <object class="GtkSpinner" id="brightness_spinner1">
-        <property name="name">brightness_spinner</property>
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="active">True</property>
-      </object>
-      <packing>
-        <property name="name">brightness_spinner</property>
-        <property name="title" translatable="yes">page1</property>
-      </packing>
-    </child>
-    <child>
-      <object class="GtkLabel" id="brightness_label1">
-        <property name="name">brightness_label</property>
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Loading...</property>
-      </object>
-      <packing>
-        <property name="name">brightness_label</property>
-        <property name="title" translatable="yes">page0</property>
-        <property name="position">1</property>
-      </packing>
-    </child>
   </object>
 </interface>

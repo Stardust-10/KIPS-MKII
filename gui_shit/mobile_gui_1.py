@@ -78,6 +78,7 @@ class Launcher(Gtk.Application):
         self.temp_label = None
         self.humidity_label = None
         self.nav_bar = None
+        self.current_radio_mode = "FM"
         self.apps = []  # list of dicts: {"name": "Calculator", "icon": "accessories-calculator"}
         self.open_apps = []
         self.app_defaults = {
@@ -338,8 +339,8 @@ class Launcher(Gtk.Application):
         self.temp_output_stack = self.builder.get_object("temp_output_stack")
         self.humidity_label = self.builder.get_object("humidity_label")
         self.humidity_output_stack = self.builder.get_object("humidity_output_stack")
-        self.brightness_label = self.builder.get_object("brightness_label")
-        self.brightness_output_stack = self.builder.get_object("brightness_output_stack")
+        #self.brightness_label = self.builder.get_object("brightness_label")
+        #self.brightness_output_stack = self.builder.get_object("brightness_output_stack")
         self.nav_bar = self.builder.get_object("nav_bar")
         self.home_icon_eb = self.builder.get_object("home_icon_eb")
         self.status_button = self.builder.get_object("status_button")
@@ -375,6 +376,54 @@ class Launcher(Gtk.Application):
         self.font_color_select = self.builder.get_object("font_color")
         self.font_color_select.connect("color-set", self.on_font_color_chosen)
         self.backlight_path  ="/sys/class/backlight/10-0045/brightness"
+        
+        #Additional radio set up
+        self.am_fm_button = self.builder.get_object("AM_FM_Button")
+        self.manual_radio_input = self.builder.get_object("manual_radio_input")
+        
+        if self.am_fm_button:
+            self.am_fm_button.set_label(f"{self.current_radio_mode}")
+            self.am_fm_button.connect("clicked", self.am_fm_toggle)
+           
+        #Triggers when user presses "enter" in textbox
+        if self.manual_radio_input:
+            self.manual_radio_input.connect("activate", self.freq_entered)
+        
+        self.radio_enter = self.builder.get_object("radio_enter")
+        
+        if self.radio_enter:
+            self.radio_enter.connect("clicked", self.freq_entered)
+
+        #Sets up main menu buttons on the home screen
+        thermometer_gif = os.path.join(BASE_DIR, "icons", "thermometer_64x64.gif")
+        self._set_button_media(
+            self.status_button,
+            thermometer_gif,
+            size_px=56,
+            button_w=96,
+            button_h=96,
+            keep_label=True
+        )
+
+        apps_gif = os.path.join(BASE_DIR, "icons", "apps_64x64.gif")
+        self._set_button_media(
+            self.apps_button,
+            apps_gif,
+            size_px=56,
+            button_w=96,
+            button_h=96,
+            keep_label=True
+        )
+        
+        settings_gif = os.path.join(BASE_DIR, "icons", "gear_64x64.gif")
+        self._set_button_media(
+            self.settings_button,
+            settings_gif,
+            size_px=56,
+            button_w=96,
+            button_h=96,
+            keep_label=True
+        )        
 
         radio_gif = os.path.join(BASE_DIR, "icons", "radio_64x64.gif")
         self._set_button_media(
@@ -385,6 +434,27 @@ class Launcher(Gtk.Application):
             button_h=96,
             keep_label=True
         )
+
+        heart_gif = os.path.join(BASE_DIR, "icons", "Heart_64x64.gif")
+        self._set_button_media(
+            self.heartbeat_button,
+            heart_gif,
+            size_px=56,
+            button_w=96,
+            button_h=96,
+            keep_label=True
+        )
+        
+        clock_gif = os.path.join(BASE_DIR, "icons", "clock_64x64.gif")
+        self._set_button_media(
+            self.clock_button,
+            clock_gif,
+            size_px=56,
+            button_w=96,
+            button_h=96,
+            keep_label=True
+        )
+        
 
         if self.home_icon_eb is not None:
             self.home_icon_eb.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
@@ -455,32 +525,91 @@ class Launcher(Gtk.Application):
             # ... add more
         ]'''
 
+        #Displays and sets up the applications in the additional apps area
         self.apps = [
-            {"name": "calculator", 
+            {"name": "Calculator", 
             "type": "external", 
             "exec": "galculator", 
-            "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
-            {"name": "glade", "type": "external", "exec": "glade",
-            "icon_path": os.path.join(BASE_DIR, "icons", "glade_icon.png")},
-            {"name": "browser", "type": "internal", "handler": "browser_open", "icon_path": os.path.join(BASE_DIR, "icons", "google.png")},
-            {"name": "app_test4.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
-            {"name": "app_test5.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
-            {"name": "app_test6.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
-            {"name": "app_test7.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
-            {"name": "app_test8.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.svg")},
-            {"name": "app_test9.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
-            {"name": "app_test10.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
-            {"name": "app_test11.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
-            {"name": "app_test12.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
-            {"name": "app_test13.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
-            {"name": "app_test14.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
-            {"name": "app_test15.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
-            {"name": "app_test16.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
-            {"name": "app_test17.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
-            {"name": "app_test18.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
-            {"name": "app_test19.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
-            {"name": "app_test20.png", "icon_path": os.path.join(BASE_DIR, "icons", "test.png")},
-            {"name": "app_test21.png", "icon_path": os.path.join(BASE_DIR, "icons", "calculator_128x128.png")},
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "calculator_128x128.png")},
+            
+            {"name": "Browser", 
+            "type": "internal", 
+            "handler": "browser_open", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "google.png")},
+            
+            {"name": "Camera", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "calculator_128x128.png")},
+            
+            {"name": "app_test5.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "calculator_128x128.png")},
+            
+            {"name": "app_test6.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test7.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test8.png", 
+            "icon_path": os.path.join(BASE_DIR, 
+            "icons", "test.png")},
+            
+            {"name": "app_test9.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test10.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test11.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test12.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test13.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test14.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test15.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test16.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test17.png",
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test18.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test19.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test20.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
+            
+            {"name": "app_test21.png", 
+            "icon_path": os.path.join(BASE_DIR, "icons", 
+            "test.png")},
                         
             # ... add more
         ]
@@ -1086,14 +1215,14 @@ class Launcher(Gtk.Application):
         try:
             ValueError("TESTING")
             brightness = call_data(False, True, False, False)
-            self.brightness_label.set_text(f"{brightness}")
-            self.brightness_output_stack.set_visible_child_name("brightness_label")
+            #self.brightness_label.set_text(f"{brightness}")
+            #self.brightness_output_stack.set_visible_child_name("brightness_label")
             print(f"brightness: {brightness}")
         except Exception as e:
             print("Error calling brightness data:", e)
             brightness = "Loading..."
-            self.brightness_output_stack.set_visible_child_name("brightness_spinner")
-            self.brightness_label.set_text(brightness)
+            #self.brightness_output_stack.set_visible_child_name("brightness_spinner")
+            #self.brightness_label.set_text(brightness)
             print(f"brightness: {brightness}")
             
     def setup_browser(self):
@@ -1129,6 +1258,7 @@ class Launcher(Gtk.Application):
         self.app_defaults["image"] = ""
         
         self.apply_all_styles()
+        
     def on_font_color_chosen(self,widget):
        
         rgba = widget.get_rgba()
@@ -1162,6 +1292,8 @@ class Launcher(Gtk.Application):
         if filepath:
            self.app_defaults["image"] = filepath
            self.apply_all_styles()
+    
+    #Volume Functions      
     def set_volume(self, volume_percent):
         try:
             subprocess.run(
@@ -1237,6 +1369,60 @@ class Launcher(Gtk.Application):
 
         except Exception as e:
             print(f"Error updating volume icons: {e}")
+            
+    #Radio Functions
+    def send_to_radio_backend(self, command_string):
+        """
+        Sends a string command (e.g., 'MODE FM' or 'TUNE 9550') 
+        to the ESP32 serial bridge.
+        """
+        
+        print(f"Sending to Radio: {command_string}")
+        
+        try:
+            # Pass the command string as a single argument to the serial script
+            subprocess.Popen(["python3", "radio_send.py", command_string])
+        
+        except Exception as e:
+            print(f"Backend Error: {e}")
+    
+    def am_fm_toggle(self, button):
+        
+        #Swaps Modes
+        if self.current_radio_mode == "FM":
+            self.current_radio_mode = "AM"
+            
+        else:
+            self.current_radio_mode = "FM"
+            
+        #Updates button text so user can see changes
+        button.set_label(self.current_radio_mode)
+        
+        #Send ESP32 command so it actually switches bands
+        self.send_to_radio_backend(f"MODE {self.current_radio_mode}")
+        
+        
+    def freq_entered(self, entry):
+        
+        if self.manual_radio_input:
+            raw_freq = self.manual_radio_input.get_text().strip()
+        
+        if not raw_freq:
+            return
+
+        # Clear textbox after something is entered so user knows its sent
+        self.manual_radio_input.set_text("")
+
+        try:
+            if self.current_radio_mode == "FM":
+                freq_val = int(float(raw_freq) * 100)
+            else:
+                freq_val = int(raw_freq)
+
+            self.send_to_radio_backend(f"TUNE {freq_val}")
+        except ValueError:
+            print("Invalid frequency format.")
+                
         
     def apply_all_styles(self):
         bg_color = self.app_defaults.get("color", "#002f00")

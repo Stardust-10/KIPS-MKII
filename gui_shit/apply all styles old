@@ -1,0 +1,35 @@
+def apply_all_styles(self):
+        css_parts = f"background-color: {self.app_defaults['color']}; "
+        
+        if self.app_defaults["image"]:
+            css_parts += (f'background-image: url("{self.app_defaults["image"]}");')
+            css_parts += ("background-repeat: no-repeat;")
+            css_parts += ("background-size: cover;")
+            css_parts += ("background-position: center;")
+        else:
+            css_parts += ("background-image : none;")
+        
+        css_whole = f"""
+        #main_window {{
+            {css_parts}
+            
+        }}
+        
+        #main_window *
+            {{
+                    
+                    font-family: "{self.app_defaults['font_family']}", sans-serif;
+                    font-size: {self.app_defaults['font_size']}px;
+                    
+                    
+                
+            
+        }}
+        """
+        
+        
+        dynamic_provider.load_from_data(css_whole.encode())
+        
+    
+   
+        
