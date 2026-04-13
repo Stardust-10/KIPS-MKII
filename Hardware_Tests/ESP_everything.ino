@@ -26,8 +26,8 @@ HardwareSerial SerialUART32_1(1);
 #define SDA2 13
 #define SCL2 14
 
-#define JS_X 11
-#define JS_Y 12
+#define JS_X 12
+#define JS_Y 11
 #define BTN_UP 40
 #define BTN_DOWN 39
 #define BTN_LEFT 38
@@ -35,7 +35,7 @@ HardwareSerial SerialUART32_1(1);
 #define BTN_ENTER 42
 
 #define hbRatePin 4
-#define hbPowerPin 16 
+#define hbPowerPin 10 
 const int ldrPin = 1;
 
 #define DEADZONE 800
