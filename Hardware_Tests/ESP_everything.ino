@@ -12,8 +12,8 @@ HardwareSerial SerialUART32_0(0);
 HardwareSerial SerialUART32_1(1); 
 
 // ---------------- Pins / Constants ----------------
-#define UART_TX_PIN 36
-#define UART_RX_PIN 37
+#define UART_TX_PIN 43
+#define UART_RX_PIN 44
 #define Uart_RX2_pin 18
 #define Uart_Tx2_pin 17
 #define UART_BAUD 115200
