@@ -83,7 +83,7 @@ void sendTempHum(int sda, int scl, String label) {
 
 void sendLDR() {
   int ldr = analogRead(ldrPin);
-  SerialUART32_0.print("LDR:");
+  SerialUART32_0.print("LDR:");SDA2, SCL2, "S2");
   SerialUART32_0.println(ldr);
 }
 
@@ -121,10 +121,6 @@ void processPiCommand(String incoming) {
       sendHeartbeatSession();
       break;
     case 4:
-      // Internal system temp placeholder (using S1 for now)
-      sendTempHum(tempsda, tempscl, "S1");
-      break;
-    case 5:
       sendTempHum(SDA2, SCL2, "S2");
       break;
     default:
@@ -133,7 +129,7 @@ void processPiCommand(String incoming) {
   }
 }
 
-// ---------------- Setup ----------------
+// ---------------- Setup ------incoming----------
 void setup() {
   // Local USB Debugging
   Serial.begin(115200);
@@ -168,7 +164,7 @@ void loop() {
     processPiCommand(incoming);
     commandActive = false;
   }
-
+  /*
   // -------- PART 2: Joystick / Button Traffic on UART 1 --------
   // Suppress while a sensor command is running to ensure smooth execution
   if (!commandActive) {
@@ -209,6 +205,6 @@ void loop() {
       }
     }
   }
-
+  */
   delay(10);
 }

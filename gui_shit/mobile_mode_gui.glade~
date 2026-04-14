@@ -1612,68 +1612,6 @@ audio-volume-medium-symbolic</property>
                                 <property name="position">3</property>
                               </packing>
                             </child>
-                            <child>
-                              <object class="GtkBox">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="orientation">vertical</property>
-                                <child>
-                                  <object class="GtkLabel" id="brightness_label_static">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="label" translatable="yes">Brightness:</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkStack" id="brightness_output_stack">
-                                    <property name="name">brightness_output_stack</property>
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="transition-type">crossfade</property>
-                                    <child>
-                                      <object class="GtkSpinner" id="brightness_spinner">
-                                        <property name="name">brightness_spinner</property>
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="active">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="name">brightness_spinner</property>
-                                        <property name="title" translatable="yes">page1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="brightness_label">
-                                        <property name="name">brightness_label</property>
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="label" translatable="yes">Loading...</property>
-                                      </object>
-                                      <packing>
-                                        <property name="name">brightness_label</property>
-                                        <property name="title" translatable="yes">page0</property>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                              </object>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">4</property>
-                              </packing>
-                            </child>
                           </object>
                           <packing>
                             <property name="name">page0</property>
@@ -1691,53 +1629,111 @@ audio-volume-medium-symbolic</property>
                       <object class="GtkBox" id="radio_page">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
+                        <property name="margin-start">18</property>
+                        <property name="margin-end">18</property>
+                        <property name="margin-top">18</property>
+                        <property name="margin-bottom">18</property>
                         <property name="orientation">vertical</property>
                         <child>
-                          <object class="GtkAspectFrame">
-                            <property name="width-request">500</property>
-                            <property name="height-request">150</property>
+                          <object class="GtkBox">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <property name="halign">center</property>
-                            <property name="hexpand">False</property>
-                            <property name="vexpand">False</property>
-                            <property name="label-xalign">0</property>
-                            <property name="shadow-type">none</property>
                             <child>
-                              <object class="GtkImage">
+                              <object class="GtkLabel" id="Radio">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="icon-name">accessories-text-editor</property>
-                                <property name="icon_size">6</property>
+                                <property name="halign">center</property>
+                                <property name="label" translatable="yes">RADIO</property>
                               </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="padding">40</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkSwitch" id="radio_on_off">
+                                <property name="name">radio_on_off</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="padding">16</property>
+                                <property name="position">1</property>
+                              </packing>
                             </child>
                           </object>
                           <packing>
-                            <property name="expand">True</property>
+                            <property name="expand">False</property>
                             <property name="fill">True</property>
                             <property name="position">0</property>
                           </packing>
                         </child>
                         <child>
-                          <!-- n-columns=5 n-rows=4 -->
-                          <object class="GtkGrid">
+                          <object class="GtkBox">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <property name="halign">center</property>
-                            <property name="valign">center</property>
+                            <property name="margin-start">20</property>
+                            <property name="margin-end">20</property>
+                            <property name="margin-top">12</property>
+                            <property name="margin-bottom">18</property>
+                            <property name="orientation">vertical</property>
+                            <property name="homogeneous">True</property>
                             <child>
-                              <object class="GtkLabel">
+                              <object class="GtkLabel" id="radio_freq_display">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="halign">center</property>
-                                <property name="valign">end</property>
-                                <property name="label" translatable="yes">Manual Selection:</property>
+                                <property name="label" translatable="yes">--.-- MHz</property>
                               </object>
                               <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">0</property>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
                               </packing>
                             </child>
+                            <child>
+                              <object class="GtkLabel" id="radio_mode_label">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">FM</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="radio_meta_label">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">Waiting for status...</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">2</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">center</property>
+                            <property name="margin-bottom">14</property>
+                            <property name="spacing">10</property>
                             <child>
                               <object class="GtkEntry" id="manual_radio_input">
                                 <property name="visible">True</property>
@@ -1745,17 +1741,20 @@ audio-volume-medium-symbolic</property>
                                 <property name="halign">center</property>
                                 <property name="valign">center</property>
                                 <property name="max-length">10</property>
+                                <property name="width-chars">20</property>
                                 <property name="max-width-chars">6</property>
-                                <property name="secondary-icon-stock">gtk-save</property>
+                                <property name="secondary-icon-stock">None</property>
+                                <property name="placeholder-text" translatable="yes">Enter FM MHz or AM kHz</property>
                               </object>
                               <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">1</property>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
                               </packing>
                             </child>
                             <child>
                               <object class="GtkButton" id="radio_enter">
-                                <property name="label" translatable="yes">Enter</property>
+                                <property name="label" translatable="yes">TUNE</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
@@ -1765,10 +1764,24 @@ audio-volume-medium-symbolic</property>
                                 <signal name="clicked" handler="freq_entered" swapped="no"/>
                               </object>
                               <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">2</property>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
                               </packing>
                             </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">center</property>
+                            <property name="margin-bottom">14</property>
                             <child>
                               <object class="GtkButton" id="AM_FM_Button">
                                 <property name="label" translatable="yes">AM/FM</property>
@@ -1779,63 +1792,134 @@ audio-volume-medium-symbolic</property>
                                 <property name="valign">center</property>
                               </object>
                               <packing>
-                                <property name="left-attach">3</property>
-                                <property name="top-attach">1</property>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
                               </packing>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
                             </child>
                           </object>
                           <packing>
-                            <property name="expand">True</property>
+                            <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">1</property>
+                            <property name="position">3</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">center</property>
+                            <property name="margin-bottom">10</property>
+                            <property name="spacing">12</property>
+                            <child>
+                              <object class="GtkButton" id="seek_down_button">
+                                <property name="label" translatable="yes">&lt;&lt; SEEK</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="seek_up_button">
+                                <property name="label" translatable="yes">SEEK &gt;&gt;</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">4</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">center</property>
+                            <property name="margin-bottom">10</property>
+                            <property name="spacing">12</property>
+                            <child>
+                              <object class="GtkButton" id="step_down_button">
+                                <property name="label" translatable="yes">- STEP </property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="step_up_button">
+                                <property name="label" translatable="yes">STEP +</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">5</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">center</property>
+                            <property name="margin-bottom">12</property>
+                            <child>
+                              <object class="GtkButton" id="status_radio_button">
+                                <property name="label" translatable="yes">STATUS</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">6</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="radio_status_label">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">Radio ready</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">7</property>
                           </packing>
                         </child>
                       </object>
@@ -2268,36 +2352,5 @@ audio-volume-medium-symbolic</property>
     <property name="upper">100</property>
     <property name="step-increment">1</property>
     <property name="page-increment">10</property>
-  </object>
-  <object class="GtkStack" id="brightness_output_stack1">
-    <property name="name">brightness_output_stack</property>
-    <property name="visible">True</property>
-    <property name="can-focus">False</property>
-    <property name="transition-type">crossfade</property>
-    <child>
-      <object class="GtkSpinner" id="brightness_spinner1">
-        <property name="name">brightness_spinner</property>
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="active">True</property>
-      </object>
-      <packing>
-        <property name="name">brightness_spinner</property>
-        <property name="title" translatable="yes">page1</property>
-      </packing>
-    </child>
-    <child>
-      <object class="GtkLabel" id="brightness_label1">
-        <property name="name">brightness_label</property>
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Loading...</property>
-      </object>
-      <packing>
-        <property name="name">brightness_label</property>
-        <property name="title" translatable="yes">page0</property>
-        <property name="position">1</property>
-      </packing>
-    </child>
   </object>
 </interface>

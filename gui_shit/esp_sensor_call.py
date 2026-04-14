@@ -2,12 +2,6 @@ import serial
 import argparse
 import math
 
-ser = serial.Serial("/dev/serial0", 115200, timeout = 2)
-
-import serial
-import argparse
-import math
-
 ser = serial.Serial("/dev/serial0", 115200, timeout=2)
 
 def _read_until_prefix(prefix, max_lines=20):
