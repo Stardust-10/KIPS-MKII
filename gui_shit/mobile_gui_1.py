@@ -21,6 +21,7 @@ import subprocess
 from dataclasses import dataclass
 from esp_sensor_call import call_data
 import math
+import signal
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -78,6 +79,7 @@ class Launcher(Gtk.Application):
         self.temp_label = None
         self.humidity_label = None
         self.nav_bar = None
+        self.camera_proc = None
         self.current_radio_mode = "FM"
         self.apps = []  # list of dicts: {"name": "Calculator", "icon": "accessories-calculator"}
         self.open_apps = []
@@ -376,6 +378,17 @@ class Launcher(Gtk.Application):
         self.font_color_select = self.builder.get_object("font_color")
         self.font_color_select.connect("color-set", self.on_font_color_chosen)
         self.backlight_path  ="/sys/class/backlight/10-0045/brightness"
+        #radio buttons
+        self.radio_freq_display = self.builder.get_object("radio_freq_display")
+        self.radio_mode_label = self.builder.get_object("radio_mode_label")
+        self.radio_meta_label = self.builder.get_object("radio_meta_label")
+        self.seek_down_button = self.builder.get_object("seek_down_button")
+        self.seek_up_button = self.builder.get_object("seek_up_button")
+        self.step_down_button = self.builder.get_object("step_down_button")
+        self.step_up_button = self.builder.get_object("step_up_button")
+        self.status_radio_button = self.builder.get_object("status_radio_button")
+        self.radio_status_label = self.builder.get_object("radio_status_label")
+                
         
         #Additional radio set up
         self.am_fm_button = self.builder.get_object("AM_FM_Button")
@@ -393,6 +406,17 @@ class Launcher(Gtk.Application):
         
         if self.radio_enter:
             self.radio_enter.connect("clicked", self.freq_entered)
+        if self.radio_freq_display:
+            self.radio_freq_display.set_text("89.90 MHz")
+
+        if self.radio_mode_label:
+            self.radio_mode_label.set_text("FM")
+
+        if self.radio_meta_label:
+            self.radio_meta_label.set_text("Waiting for status...")
+
+        if self.radio_status_label:
+            self.radio_status_label.set_text("Radio ready")
 
         #Sets up main menu buttons on the home screen
         thermometer_gif = os.path.join(BASE_DIR, "icons", "thermometer_64x64.gif")
@@ -487,6 +511,23 @@ class Launcher(Gtk.Application):
         
         if self.autobrightness_toggle is not None:
             self.autobrightness_toggle.connect("notify::active", self._on_brightness_auto)
+        
+        #radio button activations
+            
+        if self.seek_down_button:
+            self.seek_down_button.connect("clicked", self.seek_down)
+
+        if self.seek_up_button:
+            self.seek_up_button.connect("clicked", self.seek_up)
+
+        if self.step_down_button:
+            self.step_down_button.connect("clicked", self.step_down)
+
+        if self.step_up_button:
+            self.step_up_button.connect("clicked", self.step_up)
+
+        if self.status_radio_button:
+            self.status_radio_button.connect("clicked", self.get_status)
 
         
         #self._update_status_page()
@@ -540,8 +581,10 @@ class Launcher(Gtk.Application):
             "google.png")},
             
             {"name": "Camera", 
+            "type": "internal", 
+            "handler" : "camera_toggle",
             "icon_path": os.path.join(BASE_DIR, "icons", 
-            "calculator_128x128.png")},
+            "camera_128x1281.png")},
             
             {"name": "app_test5.png", 
             "icon_path": os.path.join(BASE_DIR, "icons", 
@@ -1224,7 +1267,159 @@ class Launcher(Gtk.Application):
             #self.brightness_output_stack.set_visible_child_name("brightness_spinner")
             #self.brightness_label.set_text(brightness)
             print(f"brightness: {brightness}")
+        
+    
+    #radio functions 
             
+    def send_to_radio_backend(self, command_string):
+        print(f"Sending to Radio: {command_string}")
+
+        try:
+            result = subprocess.run(
+                ["python3", "radio_send.py", command_string],
+                capture_output=True,
+                text=True
+            )
+
+            response = result.stdout.strip()
+
+            if response:
+                print("RADIO:", response)
+
+                if self.radio_status_label:
+                    self.radio_status_label.set_text(response)
+
+                self._update_radio_display_from_response(response)
+
+        except Exception as e:
+            print(f"Backend Error: {e}")
+            if self.radio_status_label:
+                self.radio_status_label.set_text(f"Backend Error: {e}")
+    def freq_entered(self, entry=None):
+        raw_freq = ""
+
+        if self.manual_radio_input:
+            raw_freq = self.manual_radio_input.get_text().strip()
+
+        if not raw_freq:
+            return
+
+        self.manual_radio_input.set_text("")
+
+        try:
+            if self.current_radio_mode == "FM":
+                freq_val = int(float(raw_freq) * 100)  # 95.5 → 9550
+            else:
+                freq_val = int(raw_freq)               # 810 → 810
+
+            self.send_to_radio_backend(f"TUNE {freq_val}")
+            self.get_status()
+
+        except ValueError:
+            print("Invalid frequency format.")
+            if self.radio_status_label:
+                self.radio_status_label.set_text("Invalid frequency format")
+            
+    def step_up(self, button=None):
+        self.send_to_radio_backend("STEPUP 10")
+
+    def step_down(self, button=None):
+        self.send_to_radio_backend("STEPDN 10")
+
+    def seek_up(self, button=None):
+        self.send_to_radio_backend("SEEKUP")
+
+    def seek_down(self, button=None):
+        self.send_to_radio_backend("SEEKDN")
+
+    def get_status(self, button=None):
+        self.send_to_radio_backend("STATUS")
+    def am_fm_toggle(self, button):
+        if self.current_radio_mode == "FM":
+            self.current_radio_mode = "AM"
+        else:
+            self.current_radio_mode = "FM"
+
+        button.set_label(self.current_radio_mode)
+        self.send_to_radio_backend(f"MODE {self.current_radio_mode}")
+        self.get_status()
+    def _update_radio_display_from_response(self, response):
+        if not response:
+            return
+
+        lines = [line.strip() for line in response.splitlines() if line.strip()]
+        status_line = None
+
+        for line in reversed(lines):
+            if line.startswith("Tuned:"):
+                status_line = line
+                break
+
+        if not status_line:
+            return
+
+        try:
+            body = status_line.replace("Tuned:", "", 1).strip()
+            parts = [p.strip() for p in body.split("|")]
+
+            freq_part = parts[0]
+
+            snr_text = ""
+            rssi_text = ""
+
+            for p in parts[1:]:
+                if p.startswith("SNR:"):
+                    snr_text = p
+                elif p.startswith("RSSI:"):
+                    rssi_text = p
+
+            # ---------- FM ----------
+            if "MHz" in freq_part:
+                self.current_radio_mode = "FM"
+
+                if self.am_fm_button:
+                    self.am_fm_button.set_label("FM")
+
+                if self.radio_mode_label:
+                    self.radio_mode_label.set_text("FM")
+
+                freq_only = freq_part.split("MHz")[0].strip()
+                stereo = "STEREO" if "STEREO" in freq_part else "MONO"
+
+                if self.radio_freq_display:
+                    self.radio_freq_display.set_text(f"{freq_only} MHz")
+
+                if self.radio_meta_label:
+                    meta = stereo
+                    if snr_text or rssi_text:
+                        meta += f"   {snr_text}   {rssi_text}"
+                    self.radio_meta_label.set_text(meta)
+
+            # ---------- AM ----------
+            elif "kHz" in freq_part:
+                self.current_radio_mode = "AM"
+
+                if self.am_fm_button:
+                    self.am_fm_button.set_label("AM")
+
+                if self.radio_mode_label:
+                    self.radio_mode_label.set_text("AM")
+
+                freq_only = freq_part.split("kHz")[0].strip()
+
+                if self.radio_freq_display:
+                    self.radio_freq_display.set_text(f"{freq_only} kHz")
+
+                if self.radio_meta_label:
+                    meta = "AM"
+                    if snr_text or rssi_text:
+                        meta += f"   {snr_text}   {rssi_text}"
+                    self.radio_meta_label.set_text(meta)
+
+        except Exception as e:
+            print(f"Status parse error: {e}")
+            
+    
     def setup_browser(self):
         if getattr(self, "browser", None) is not None:
             return
@@ -1238,7 +1433,26 @@ class Launcher(Gtk.Application):
         print("browser clicked")
         self.browser.load_uri("https://www.google.com")
         self.shell_stack.set_visible_child_name("browser_page")
-        
+    #camera
+    def camera_toggle(self,widget):
+        if self.camera_proc is None:
+            try:
+                self.camera_proc = subprocess.Popen([
+                "rpicam-hello",
+                "-t", "0"
+                ])
+                print("preview started")
+            except Exception as e:
+                print(f"Failed to launch camera: {e}")
+        else:
+            self.stop_camera()
+    def stop_camera(self):
+        if self.camera_proc:
+            self.camera_proc.send_signal(signal.SIGINT)
+            self.camera_proc.wait()
+            self.camera_proc = None
+            print("Camera stopped")
+    
 
     #background color
     def on_color_chosen(self,widget):
