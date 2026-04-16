@@ -38,34 +38,28 @@ SUPPORTED_COMMANDS = {
     "SEEKDN",
     "MODE FM",
     "MODE AM",
+    "STATUS",
+    "HELP"
 }
-
-UNSUPPORTED_MESSAGES = {
-    "TUNE": "TUNE is not implemented in master_everything.ino yet.",
-    "STEPUP": "STEPUP is not implemented in master_everything.ino yet.",
-    "STEPDN": "STEPDN is not implemented in master_everything.ino yet.",
-    "STATUS": "STATUS is not implemented in master_everything.ino yet.",
-    "HELP": "Supported commands: MODE FM, MODE AM, VOLUP, VOLDN, SEEKUP, SEEKDN",
-}
-
 
 def normalize_command(command: str) -> str:
     return " ".join(command.strip().split()).upper()
 
 
 def validate_command(command: str) -> Optional[str]:
+    if not command:
+        return "Empty command"
+
+    head = command.split(" ", 1)[0]
+
+    # Allow parameterized commands
+    if head in {"TUNE", "STEPUP", "STEPDN"}:
+        return None
+
     if command in SUPPORTED_COMMANDS:
         return None
 
-    head = command.split(" ", 1)[0] if command else ""
-    if head in UNSUPPORTED_MESSAGES:
-        return UNSUPPORTED_MESSAGES[head]
-
-    return (
-        f"Unsupported command for current firmware: {command}. "
-        "Supported commands: MODE FM, MODE AM, VOLUP, VOLDN, SEEKUP, SEEKDN"
-    )
-
+    return f"Unsupported command: {command}"
 
 def send_radio_command(command: str, port: str = SERIAL_PORT, baud_rate: int = BAUD_RATE) -> str:
     normalized = normalize_command(command)

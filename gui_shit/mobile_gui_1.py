@@ -1,6 +1,7 @@
 import os
 import sys
 import serial
+import threading
 
 DIRR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(DIRR)
@@ -35,7 +36,7 @@ dynamic_provider = Gtk.CssProvider()
 
 provider.load_from_path(path)
 Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
-ROWS, COLS = 3, 4
+ROWS, COLS = 2, 3
 PAGE_SIZE = ROWS * COLS
 
 value = 1
@@ -84,6 +85,8 @@ class Launcher(Gtk.Application):
         self.current_radio_mode = "FM"
         self.apps = []  # list of dicts: {"name": "Calculator", "icon": "accessories-calculator"}
         self.open_apps = []
+        
+        self._heartbeat_poll_in_progress = False
         
         # Controller Board on Pi UART4
         self.ctrl_ser = None
@@ -174,7 +177,9 @@ class Launcher(Gtk.Application):
                 self._update_battery_icon(percent, lp, False)  # example values
                 return(percent)
         except FileNotFoundError:
-            self._update_battery_icon(-1, False, False)
+            # FIX THIS
+            #self._update_battery_icon(-1, False, False)
+            self._update_battery_icon(100, False, True)
             print('Battery read error')
             return(-1)
     
@@ -304,7 +309,9 @@ class Launcher(Gtk.Application):
         elif percentage <= 90.0:
             icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_1.png")
         else:
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_0.png")
+            #icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_0.png")
+            # FIX THIS
+            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_charging.png")
 
         self._set_image_scaled(self.battery_icon, icon_name, size_px=100)
 
@@ -345,10 +352,32 @@ class Launcher(Gtk.Application):
         self.battery_icon = self.builder.get_object("battery_icon")
         self.wifi_icon = self.builder.get_object("wifi_icon")
         self.volume_icon = self.builder.get_object("volume_icon")
+        
         self.temp_label = self.builder.get_object("temp_label")
+        self.temp_label_ext = self.builder.get_object("temp_label_ext")
+        
         self.temp_output_stack = self.builder.get_object("temp_output_stack")
+        self.temp_output_stack_ext = self.builder.get_object("temp_output_stack_ext")
+
         self.humidity_label = self.builder.get_object("humidity_label")
+        self.humidity_label_ext = self.builder.get_object("humidity_label_ext")
+
         self.humidity_output_stack = self.builder.get_object("humidity_output_stack")
+        self.humidity_output_stack_ext = self.builder.get_object("humidity_output_stack_ext")
+
+
+        ###################################################################################
+        self.humidity_label_static1 = self.builder.get_object("humidty_label_static1")
+        self.humidity_output_stack1 = self.builder.get_object("humidity_output_stack1")
+        self.humidity_spinner1 = self.builder.get_object("humidity_spinner1")
+        self.humidity_label1 = self.builder.get_object("humidity_label1")
+        self.heart_beat_enter = self.builder.get_object("heart_beat_enter")
+        ###################################################################################
+
+
+
+
+
         #self.brightness_label = self.builder.get_object("brightness_label")
         #self.brightness_output_stack = self.builder.get_object("brightness_output_stack")
         self.nav_bar = self.builder.get_object("nav_bar")
@@ -505,7 +534,10 @@ class Launcher(Gtk.Application):
             self.radio_button.connect("clicked", self._on_app_icon_clicked, self.radio_app)
         
         if self.heartbeat_button is not None:
-            self.heartbeat_button.connect("clicked", self._on_app_icon_clicked, self.heartbeat_app)
+            self.heartbeat_button.connect("clicked", self._open_heartbeat_page)
+            
+        if self.heart_beat_enter is not None:
+            self.heart_beat_enter.connect("clicked", self._poll_heartbeat_clicked)
         
         if self.clock_button is not None:
             self.clock_button.connect("clicked", self._on_clock_button_clicked)  
@@ -547,31 +579,6 @@ class Launcher(Gtk.Application):
         # If your .glade left a single FlowBox in the Stack, remove it; we create pages dynamically.
         for child in list(self.stack.get_children()):
             self.stack.remove(child)
-
-        # sample data; replace with your registry
-        '''self.apps = [
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "test.png", "icon_path": os.path.join(BASE_DIR, "test.png")},
-            {"name": "CALC2.png", "icon_path": os.path.join(BASE_DIR, "CALC2.png")},
-            {"name": "CALCULATOR.jpeg", "icon_path": os.path.join(BASE_DIR, "CALCULATOR.jpeg")},
-            {"name": "CALCULATOR.png", "icon_path": os.path.join(BASE_DIR, "CALCULATOR.png")},
-
-            {"name": "Test1",   "icon": "utilities-terminal"},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "test4",   "icon": "utilities-terminal"},
-            {"name": "test5",      "icon": "system-file-manager"},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "calculator_128x128.png", "icon_path": os.path.join(BASE_DIR, "calculator_128x128.png")},
-            {"name": "test8", "icon": "accessories-calculator"},
-            {"name": "test9",   "icon": "utilities-terminal"},
-            {"name": "test10",   "icon": "utilities-terminal"},
-            {"name": "test11",      "icon": "system-file-manager"},
-            {"name": "test12", "icon": "accessories-calculator"},
-            {"name": "test13",   "icon": "utilities-terminal"},
-
-            # ... add more
-        ]'''
 
         #Displays and sets up the applications in the additional apps area
         self.apps = [
@@ -621,47 +628,6 @@ class Launcher(Gtk.Application):
             "icon_path": os.path.join(BASE_DIR, "icons", 
             "test.png")},
             
-            {"name": "app_test12.png", 
-            "icon_path": os.path.join(BASE_DIR, "icons", 
-            "test.png")},
-            
-            {"name": "app_test13.png", 
-            "icon_path": os.path.join(BASE_DIR, "icons", 
-            "test.png")},
-            
-            {"name": "app_test14.png", 
-            "icon_path": os.path.join(BASE_DIR, "icons", 
-            "test.png")},
-            
-            {"name": "app_test15.png", 
-            "icon_path": os.path.join(BASE_DIR, "icons", 
-            "test.png")},
-            
-            {"name": "app_test16.png", 
-            "icon_path": os.path.join(BASE_DIR, "icons", 
-            "test.png")},
-            
-            {"name": "app_test17.png",
-            "icon_path": os.path.join(BASE_DIR, "icons", 
-            "test.png")},
-            
-            {"name": "app_test18.png", 
-            "icon_path": os.path.join(BASE_DIR, "icons", 
-            "test.png")},
-            
-            {"name": "app_test19.png", 
-            "icon_path": os.path.join(BASE_DIR, "icons", 
-            "test.png")},
-            
-            {"name": "app_test20.png", 
-            "icon_path": os.path.join(BASE_DIR, "icons", 
-            "test.png")},
-            
-            {"name": "app_test21.png", 
-            "icon_path": os.path.join(BASE_DIR, "icons", 
-            "test.png")},
-                        
-            # ... add more
         ]
 
         self._build_pages()
@@ -682,6 +648,71 @@ class Launcher(Gtk.Application):
         
         win.set_application(self)
         win.show_all()
+
+
+            
+    def _open_heartbeat_page(self, button):
+        self._on_app_icon_clicked(button, self.heartbeat_app)
+        self._start_heartbeat_poll()
+
+    def _poll_heartbeat_clicked(self, button=None):
+        self._start_heartbeat_poll()
+
+    def _start_heartbeat_poll(self):
+        if self._heartbeat_poll_in_progress:
+            return
+
+        self._heartbeat_poll_in_progress = True
+
+        if self.humidity_output_stack1:
+            self.humidity_output_stack1.set_visible_child_name("humidity_spinner1")
+
+        if self.humidity_label1:
+            self.humidity_label1.set_text("Reading...")
+
+        worker = threading.Thread(target=self._heartbeat_poll_worker, daemon=True)
+        worker.start()
+
+    def _heartbeat_poll_worker(self):
+        try:
+            hb = call_data(hb=True)
+            GLib.idle_add(self._finish_heartbeat_poll_success, hb)
+        except Exception as e:
+            GLib.idle_add(self._finish_heartbeat_poll_error, str(e))
+
+    def _finish_heartbeat_poll_success(self, hb):
+        self._heartbeat_poll_in_progress = False
+
+        if hb is None:
+            if self.humidity_label1:
+                self.humidity_label1.set_text("No reading")
+        else:
+            if self.humidity_label1:
+                self.humidity_label1.set_text(f"{float(hb):.0f} BPM")
+
+        if self.humidity_output_stack1:
+            self.humidity_output_stack1.set_visible_child_name("humidity_label1")
+
+        return False
+
+    def _finish_heartbeat_poll_error(self, err_msg):
+        self._heartbeat_poll_in_progress = False
+        print("Error calling heartbeat data:", err_msg)
+
+        if self.humidity_label1:
+            self.humidity_label1.set_text("Heartbeat Error")
+
+        if self.humidity_output_stack1:
+            self.humidity_output_stack1.set_visible_child_name("humidity_label1")
+
+        return False
+        
+        
+        
+        
+        
+        
+        
 
     # ---------- UI helpers ----------
     def _first_of_type(self, klass):
@@ -710,7 +741,7 @@ class Launcher(Gtk.Application):
             while self.ctrl_ser.in_waiting:
                 line = self.ctrl_ser.readline().decode("utf-8", errors="ignore").strip()
                 if line:
-                    print("CTRL:", line)
+                    #print("CTRL:", line)
                     self._handle_controller_line(line)
         except Exception as e:
             print(f"Controller UART read failed: {e}")
@@ -1382,15 +1413,22 @@ class Launcher(Gtk.Application):
             s2_temp = float(s2_temp_str)
             s2_hum = float(s2_hum_str)
 
-            print(f"S2 temp/humidity: {s2_temp}, {s2_hum}")
+            if math.isnan(s1_temp) or math.isnan(s1_hum):
+                raise ValueError("Sensor 2 returned NaN")
 
-            # If you add dedicated Glade labels for sensor 2, update them here.
-            # Example:
-            # self.temp2_label.set_text(f"S2: {(s2_temp * 9/5) + 32:.1f}°F, {s2_temp:.1f}°C")
-            # self.humidity2_label.set_text(f"S2: {s2_hum:.1f}%")
+            s2_temp_f = (s2_temp * 9 / 5) + 32
+            self.temp_label_ext.set_text(f"S2: {s2_temp_f:.1f}°F, {s2_temp:.1f}°C")
+            self.humidity_label_ext.set_text(f"S2: {s2_hum:.1f}%")
 
+            if self.temp_output_stack_ext:
+                self.temp_output_stack_ext.set_visible_child_name("temp_label_ext")
+            if self.humidity_output_stack:
+                self.humidity_output_stack_ext.set_visible_child_name("humidity_label_ext")
+                
         except Exception as e:
             print("Error calling sensor 2 data:", e)
+            self.temp_label_ext.set_text("S2: Loading...")
+            self.humidity_label_ext.set_text("S2: Loading...")
 
         # LDR
         try:
