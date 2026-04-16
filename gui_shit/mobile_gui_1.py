@@ -1,5 +1,6 @@
 import os
 import sys
+import serial
 
 DIRR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(DIRR)
@@ -83,6 +84,13 @@ class Launcher(Gtk.Application):
         self.current_radio_mode = "FM"
         self.apps = []  # list of dicts: {"name": "Calculator", "icon": "accessories-calculator"}
         self.open_apps = []
+        
+        # Controller Board on Pi UART4
+        self.ctrl_ser = None
+        self.cursor_x = 0
+        self.cursor_y = 0
+        self.controller_deadzone = 250
+        
         self.app_defaults = {
             "color": "#002f00",
             "image": "",
@@ -485,8 +493,7 @@ class Launcher(Gtk.Application):
             self.home_icon_eb.connect("button-press-event", self._on_home_icon_clicked)
 
         if self.status_button is not None:
-            #self.status_button.connect("clicked", self._update_status_page)
-            self.status_button.connect("clicked", self._on_app_icon_clicked, self.status_app)
+            self.status_button.connect("clicked", self._open_status_page)
         
         if self.apps_button is not None:
             self.apps_button.connect("clicked", self._on_app_icon_clicked, self.apps_app)  # example, replace with actual app entry
@@ -669,7 +676,10 @@ class Launcher(Gtk.Application):
         GLib.timeout_add_seconds(1, self._update_battery_val)
         #GLib.timeout_add_seconds(1, self._update_volume_val)  # example values
         GLib.timeout_add_seconds(1, self._update_wifi_val)  # example values
-
+        
+        self.setup_controller_serial() 
+        GLib.timeout_add(16, self._poll_controller_input)
+        
         win.set_application(self)
         win.show_all()
 
@@ -680,6 +690,105 @@ class Launcher(Gtk.Application):
             if isinstance(obj, klass):
                 return obj
         return None
+        
+    
+    
+    
+    def setup_controller_serial(self):
+        try:
+            self.ctrl_ser = serial.Serial("/dev/ttyAMA4", 115200, timeout=0)
+            print("Controller UART ready on /dev/ttyAMA4")
+        except Exception as e:
+            self.ctrl_ser = None
+            print(f"Controller UART open failed: {e}")
+
+    def _poll_controller_input(self):
+        if self.ctrl_ser is None:
+            return True
+
+        try:
+            while self.ctrl_ser.in_waiting:
+                line = self.ctrl_ser.readline().decode("utf-8", errors="ignore").strip()
+                if line:
+                    print("CTRL:", line)
+                    self._handle_controller_line(line)
+        except Exception as e:
+            print(f"Controller UART read failed: {e}")
+
+        return True
+
+    def _handle_controller_line(self, line):
+        if line.startswith("M,"):
+            try:
+                _, xs, ys = line.split(",", 2)
+                x = int(xs)
+                y = int(ys)
+                self._handle_controller_motion(x, y)
+            except Exception as e:
+                print(f"Bad motion packet '{line}': {e}")
+            return
+
+        if line == "UP":
+            self._controller_focus_move("up")
+        elif line == "DOWN":
+            self._controller_focus_move("down")
+        elif line == "LEFT":
+            self._controller_focus_move("left")
+        elif line == "RIGHT":
+            self._controller_focus_move("right")
+        elif line == "ENTER":
+            self._controller_activate_focused()
+
+    def _handle_controller_motion(self, x, y):
+        if abs(x) < self.controller_deadzone and abs(y) < self.controller_deadzone:
+            return
+
+        # For now, treat joystick as directional focus navigation.
+        if abs(x) > abs(y):
+            if x > 0:
+                self._controller_focus_move("right")
+            else:
+                self._controller_focus_move("left")
+        else:
+            if y > 0:
+                self._controller_focus_move("down")
+            else:
+                self._controller_focus_move("up")
+
+    def _controller_focus_move(self, direction):
+        win = self.window
+        if not win:
+            return
+
+        current = win.get_focus()
+        if current:
+            if direction == "up":
+                current.child_focus(Gtk.DirectionType.UP)
+            elif direction == "down":
+                current.child_focus(Gtk.DirectionType.DOWN)
+            elif direction == "left":
+                current.child_focus(Gtk.DirectionType.LEFT)
+            elif direction == "right":
+                current.child_focus(Gtk.DirectionType.RIGHT)
+
+    def _controller_activate_focused(self):
+        win = self.window
+        if not win:
+            return
+
+        current = win.get_focus()
+        if current and hasattr(current, "activate"):
+            try:
+                current.activate()
+                return
+            except Exception:
+                pass
+
+        if current and isinstance(current, Gtk.Button):
+            current.clicked()
+    
+    
+    
 
     def _ensure_pager_box(self):
         # As a last resort, make one and pack at bottom of top-level box.
@@ -1162,6 +1271,9 @@ class Launcher(Gtk.Application):
         self._rebuild_nav_bar(len(self.open_apps))
         self.content_stack.set_visible_child_name(f"{app_entry.stack_name}")
 
+    def _open_status_page(self, button):
+        self._update_status_page()
+        self._on_app_icon_clicked(button, self.status_app)
             
     def _on_status_button_clicked(self, button):
         print("Status button clicked")
@@ -1228,45 +1340,74 @@ class Launcher(Gtk.Application):
             
           except Exception as e:
             print(f"brightness error: {e}")
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
     def _update_status_page(self):
-        # TODO hook into actual sensors
+        # Sensor 1
         try:
-            #raise ValueError("TESTING")
-            temp_str, hum_str = call_data(True, False, False, False)
-            temp = float(temp_str)
-            hum = float(hum_str)
-            if math.isnan(temp) or math.isnan(hum):
-                raise ValueError("Sensor returned NaN")
-            #print(temp)
-            #print(hum)
-            temp_f = (temp * 9/5) + 32
-            self.temp_label.set_text(f"{temp_f}°F, {temp}°C")
-            self.humidity_label.set_text(f"{hum}%")
-            self.temp_output_stack.set_visible_child_name("temp_label")
-            self.humidity_output_stack.set_visible_child_name("humidity_label")
-            print(f"temp: {temp}, hum: {hum}")
-        except Exception as e:
-            print("Error calling sensor data:", e)
-            temp, hum = "Loading...", "Loading..."  # fallback values
-            print('this bitch errored out')
-            #self.temp_output_stack.set_visible_child_name("temp_spinner")
-            #self.humidity_output_stack.set_visible_child_name("humidity_spinner")
-            self.temp_label.set_text(temp)
-            self.humidity_label.set_text(hum)
-            print(f"t&h: {temp} {hum}")
+            s1_temp_str, s1_hum_str = call_data(tempHum=True)
+            s1_temp = float(s1_temp_str)
+            s1_hum = float(s1_hum_str)
 
+            if math.isnan(s1_temp) or math.isnan(s1_hum):
+                raise ValueError("Sensor 1 returned NaN")
+
+            s1_temp_f = (s1_temp * 9 / 5) + 32
+            self.temp_label.set_text(f"S1: {s1_temp_f:.1f}°F, {s1_temp:.1f}°C")
+            self.humidity_label.set_text(f"S1: {s1_hum:.1f}%")
+
+            if self.temp_output_stack:
+                self.temp_output_stack.set_visible_child_name("temp_label")
+            if self.humidity_output_stack:
+                self.humidity_output_stack.set_visible_child_name("humidity_label")
+
+        except Exception as e:
+            print("Error calling sensor 1 data:", e)
+            self.temp_label.set_text("S1: Loading...")
+            self.humidity_label.set_text("S1: Loading...")
+
+        # Sensor 2
         try:
-            ValueError("TESTING")
-            brightness = call_data(False, True, False, False)
-            #self.brightness_label.set_text(f"{brightness}")
-            #self.brightness_output_stack.set_visible_child_name("brightness_label")
+            s2_temp_str, s2_hum_str = call_data(sensor2=True)
+            s2_temp = float(s2_temp_str)
+            s2_hum = float(s2_hum_str)
+
+            print(f"S2 temp/humidity: {s2_temp}, {s2_hum}")
+
+            # If you add dedicated Glade labels for sensor 2, update them here.
+            # Example:
+            # self.temp2_label.set_text(f"S2: {(s2_temp * 9/5) + 32:.1f}°F, {s2_temp:.1f}°C")
+            # self.humidity2_label.set_text(f"S2: {s2_hum:.1f}%")
+
+        except Exception as e:
+            print("Error calling sensor 2 data:", e)
+
+        # LDR
+        try:
+            brightness = call_data(lux=True)
             print(f"brightness: {brightness}")
+
+            # If you add a Glade label for brightness, update it here.
+            # Example:
+            # self.brightness_label.set_text(str(brightness))
+
         except Exception as e:
             print("Error calling brightness data:", e)
-            brightness = "Loading..."
-            #self.brightness_output_stack.set_visible_child_name("brightness_spinner")
-            #self.brightness_label.set_text(brightness)
-            print(f"brightness: {brightness}")
+        
+        
+        
+        
+        
         
     
     #radio functions 
@@ -1281,44 +1422,43 @@ class Launcher(Gtk.Application):
                 text=True
             )
 
-            response = result.stdout.strip()
+            response = (result.stdout or "").strip()
+            err = (result.stderr or "").strip()
+
+            if err:
+                print("RADIO ERR:", err)
 
             if response:
                 print("RADIO:", response)
-
                 if self.radio_status_label:
                     self.radio_status_label.set_text(response)
-
                 self._update_radio_display_from_response(response)
+            else:
+                if self.radio_status_label:
+                    self.radio_status_label.set_text("No radio response")
 
         except Exception as e:
             print(f"Backend Error: {e}")
             if self.radio_status_label:
                 self.radio_status_label.set_text(f"Backend Error: {e}")
+                
+                
+                
+                
+                
+                
+                
     def freq_entered(self, entry=None):
-        raw_freq = ""
-
         if self.manual_radio_input:
-            raw_freq = self.manual_radio_input.get_text().strip()
+            self.manual_radio_input.set_text("")
 
-        if not raw_freq:
-            return
-
-        self.manual_radio_input.set_text("")
-
-        try:
-            if self.current_radio_mode == "FM":
-                freq_val = int(float(raw_freq) * 100)  # 95.5 → 9550
-            else:
-                freq_val = int(raw_freq)               # 810 → 810
-
-            self.send_to_radio_backend(f"TUNE {freq_val}")
-            self.get_status()
-
-        except ValueError:
-            print("Invalid frequency format.")
-            if self.radio_status_label:
-                self.radio_status_label.set_text("Invalid frequency format")
+        if self.radio_status_label:
+            self.radio_status_label.set_text("Direct TUNE not supported by current ESP firmware")
+            
+            
+            
+            
+            
             
     def step_up(self, button=None):
         self.send_to_radio_backend("STEPUP 10")
@@ -1343,82 +1483,42 @@ class Launcher(Gtk.Application):
         button.set_label(self.current_radio_mode)
         self.send_to_radio_backend(f"MODE {self.current_radio_mode}")
         self.get_status()
+        
+        
+        
+        
+        
+        
+        
+        
     def _update_radio_display_from_response(self, response):
         if not response:
             return
 
-        lines = [line.strip() for line in response.splitlines() if line.strip()]
-        status_line = None
+        if "MODE FM" in response or response.endswith("FM"):
+            self.current_radio_mode = "FM"
+            if self.am_fm_button:
+                self.am_fm_button.set_label("FM")
+            if self.radio_mode_label:
+                self.radio_mode_label.set_text("FM")
 
-        for line in reversed(lines):
-            if line.startswith("Tuned:"):
-                status_line = line
-                break
+        elif "MODE AM" in response or response.endswith("AM"):
+            self.current_radio_mode = "AM"
+            if self.am_fm_button:
+                self.am_fm_button.set_label("AM")
+            if self.radio_mode_label:
+                self.radio_mode_label.set_text("AM")
 
-        if not status_line:
-            return
-
-        try:
-            body = status_line.replace("Tuned:", "", 1).strip()
-            parts = [p.strip() for p in body.split("|")]
-
-            freq_part = parts[0]
-
-            snr_text = ""
-            rssi_text = ""
-
-            for p in parts[1:]:
-                if p.startswith("SNR:"):
-                    snr_text = p
-                elif p.startswith("RSSI:"):
-                    rssi_text = p
-
-            # ---------- FM ----------
-            if "MHz" in freq_part:
-                self.current_radio_mode = "FM"
-
-                if self.am_fm_button:
-                    self.am_fm_button.set_label("FM")
-
-                if self.radio_mode_label:
-                    self.radio_mode_label.set_text("FM")
-
-                freq_only = freq_part.split("MHz")[0].strip()
-                stereo = "STEREO" if "STEREO" in freq_part else "MONO"
-
-                if self.radio_freq_display:
-                    self.radio_freq_display.set_text(f"{freq_only} MHz")
-
-                if self.radio_meta_label:
-                    meta = stereo
-                    if snr_text or rssi_text:
-                        meta += f"   {snr_text}   {rssi_text}"
-                    self.radio_meta_label.set_text(meta)
-
-            # ---------- AM ----------
-            elif "kHz" in freq_part:
-                self.current_radio_mode = "AM"
-
-                if self.am_fm_button:
-                    self.am_fm_button.set_label("AM")
-
-                if self.radio_mode_label:
-                    self.radio_mode_label.set_text("AM")
-
-                freq_only = freq_part.split("kHz")[0].strip()
-
-                if self.radio_freq_display:
-                    self.radio_freq_display.set_text(f"{freq_only} kHz")
-
-                if self.radio_meta_label:
-                    meta = "AM"
-                    if snr_text or rssi_text:
-                        meta += f"   {snr_text}   {rssi_text}"
-                    self.radio_meta_label.set_text(meta)
-
-        except Exception as e:
-            print(f"Status parse error: {e}")
+        if self.radio_meta_label:
+            self.radio_meta_label.set_text(response)
             
+    
+    
+    
+    
+    
+    
+    
     
     def setup_browser(self):
         if getattr(self, "browser", None) is not None:
