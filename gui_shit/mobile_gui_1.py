@@ -44,6 +44,8 @@ wifi_val = 0
 vol_value = 0
 
 
+
+
 @dataclass
 class AppEntry:
     app_id: str                         # e.g. "calc_app"
@@ -114,42 +116,42 @@ class Launcher(Gtk.Application):
     status_app = AppEntry(
         app_id="status_app",
         title="Status",
-        icon_path=os.path.join(BASE_DIR, "icons", "calculator_128x128.png"),
+        icon_path=os.path.join(BASE_DIR, "icons", "thermometer_128x128.png"),
         stack_name="status_page"
     )
 
     apps_app = AppEntry(
         app_id="apps_app",
         title="Apps",
-        icon_path=os.path.join(BASE_DIR, "icons", "battery_1.png"),
+        icon_path=os.path.join(BASE_DIR, "icons", "Apps_128x128.png"),
         stack_name="app_stack"
     )
 
     clock_app = AppEntry(
         app_id="clock_app",
         title="Clock",
-        icon_path=os.path.join(BASE_DIR, "icons", "volume_1.png"),
+        icon_path=os.path.join(BASE_DIR, "icons", "Clock_128x128.png"),
         stack_name="clock_fullscreen"
     )
 
     settings_app = AppEntry(
         app_id="settings_app",
         title="Settings",
-        icon_path=os.path.join(BASE_DIR, "icons", "wifi_1.png"),
+        icon_path=os.path.join(BASE_DIR, "icons", "Gear_128x128.png"),
         stack_name="settings_page"
     )
 
     radio_app = AppEntry(
         app_id="radio_app",
         title="Radio",
-        icon_path=os.path.join(BASE_DIR, "icons", "calculator_128x128.png"),
+        icon_path=os.path.join(BASE_DIR, "icons", "radio_128x128.png"),
         stack_name="radio_page"
     )
     
     heartbeat_app = AppEntry(
         app_id="heartbeat_app",
         title="Health",
-        icon_path=os.path.join(BASE_DIR, "icons", "calculator_128x128.png"),
+        icon_path=os.path.join(BASE_DIR, "icons", "Heart_128x128.png"),
         stack_name="heartbeat_page"
     )
 
@@ -315,6 +317,30 @@ class Launcher(Gtk.Application):
 
         self._set_image_scaled(self.battery_icon, icon_name, size_px=100)
 
+    def _lux_to_slider_value(self, lux):
+        lux = max(0.0, min(3500.0, lux))
+
+        if lux <= 500:
+            slider_val = 10
+        elif lux <= 1000:
+            slider_val = 25
+        elif lux <= 1500:
+            slider_val = 40
+        elif lux <= 2000:
+            slider_val = 55
+        elif lux <= 2500:
+            slider_val = 70
+        elif lux <= 3000:
+            slider_val = 80
+        else:
+            slider_val = 100
+        (f'SLIDER_VAL: {slider_val}')
+
+        return slider_val
+
+
+
+
     def _build_pages(self):
         chunks = [self.apps[i:i+PAGE_SIZE] for i in range(0, len(self.apps), PAGE_SIZE)] or [[]]
 
@@ -375,7 +401,10 @@ class Launcher(Gtk.Application):
         ###################################################################################
 
 
-
+        self._auto_brightness_enabled = False
+        self._auto_brightness_poll_in_progress = False
+        self._auto_brightness_timer_id = None
+        self._last_auto_brightness_level = None
 
 
         #self.brightness_label = self.builder.get_object("brightness_label")
@@ -414,7 +443,7 @@ class Launcher(Gtk.Application):
         self.brightness_slider.connect("value-changed" , self.on_brightness)
         self.font_color_select = self.builder.get_object("font_color")
         self.font_color_select.connect("color-set", self.on_font_color_chosen)
-        self.backlight_path  ="/sys/class/backlight/10-0045/brightness"
+        self.backlight_path  ="/sys/class/backlight/0-0045/brightness"
         #radio buttons
         self.radio_freq_display = self.builder.get_object("radio_freq_display")
         self.radio_mode_label = self.builder.get_object("radio_mode_label")
@@ -1328,37 +1357,70 @@ class Launcher(Gtk.Application):
         self.content_stack.set_visible_child_name("settings_page")
         
     def _on_brightness_auto(self, switch, _):
+        print("auto toggle changed", self.autobrightness_toggle.get_active())
         if self.autobrightness_toggle.get_active():
+            print('turning autobrightness on')
             self.manual_brightness_tab.set_visible_child_name("brightness_cover")
             self.start_auto_brightness()
             # SET TO READ FROM LDR FOR BRIGHTNESS
         else:
             # POLL FROM SLIDER TO DETERMINE BRIGHTNESS VALUE
+            print('turning auto brightness off')
             self.manual_brightness_tab.set_visible_child_name("manual_brightness")
             self.stop_auto_brightness()
     def start_auto_brightness(self):
-        print("Auto brightness started")
+        if self._auto_brightness_enabled:
+            return
+
+        self._auto_brightness_enabled = True
+
+        if self._auto_brightness_timer_id is None:
+            self._auto_brightness_timer_id = GLib.timeout_add_seconds(
+                5,
+                self._auto_brightness_timer_callback
+            )
+
+        self._start_auto_brightness_poll()
+
     def stop_auto_brightness(self):
-        print("Stop auto brightness")
-        low1 = 0 #low of slider
-        low2 = 6 # bottom bound of screen brightness
-        high1 = 100 #where we want to stop scale
-        high2 = 74 #max bound of screen brightness before cutoff
+        self._auto_brightness_enabled = False
+
+        if self._auto_brightness_timer_id is not None:
+            GLib.source_remove(self._auto_brightness_timer_id)
+            self._auto_brightness_timer_id = None
+
+        low1 = 0
+        low2 = 6
+        high1 = 100
+        high2 = 74
+
         cmd = f'cat {self.backlight_path}'
-        hw_val = subprocess.check_output(cmd, shell = True).decode().strip()
+        hw_val = subprocess.check_output(cmd, shell=True).decode().strip()
         hw_val = int(hw_val)
+
         if hw_val == 255:
-            hw_val = high2
-        val = int(((hw_val *(high1 - low1))/(high2-low2)) - low2 +low1)
-        #set value of slider to val
-        self.on_brightness(self.brightness_slider)
+            val = 100
+        else:
+            val = int((hw_val - low2) * (high1 - low1) / (high2 - low2) + low1)
+
+        val = max(0, min(100, val))
+
         self.brightness.set_value(val)
+
+    def _auto_brightness_timer_callback(self):
+        if not self._auto_brightness_enabled:
+            return False
+
+        self._start_auto_brightness_poll()
+        return True
     def on_brightness(self,slider):
         val = slider.get_value()
+        
         low1 = 0 #low of slider
         low2 = 6 # bottom bound of screen brightness
         high1 = 100 #where we want to stop scale
         high2 = 74 #max bound of screen brightness before cutoff
+        
         if val <= 89:
             hw_val = low2 + (val- low1) * (high2-low2) /(high1-low1)
         else:
@@ -1372,9 +1434,57 @@ class Launcher(Gtk.Application):
           except Exception as e:
             print(f"brightness error: {e}")
             
+    
             
             
             
+            
+            
+    def _start_auto_brightness_poll(self):
+        if not self._auto_brightness_enabled:
+            return
+
+        if self._auto_brightness_poll_in_progress:
+            return
+
+        self._auto_brightness_poll_in_progress = True
+        worker = threading.Thread(target=self._auto_brightness_poll_worker, daemon=True)
+        worker.start()
+
+    def _auto_brightness_poll_worker(self):
+        try:
+            lux = call_data(lux=True)
+            print(lux)
+            GLib.idle_add(self._finish_auto_brightness_poll_success, lux)
+        except Exception as e:
+            print("error with autobrightness")
+            GLib.idle_add(self._finish_auto_brightness_poll_error, str(e))
+
+    def _finish_auto_brightness_poll_success(self, lux):
+        self._auto_brightness_poll_in_progress = False
+
+        if not self._auto_brightness_enabled:
+            return False
+
+        try:
+            lux_val = float(lux)
+        except (TypeError, ValueError):
+            print(f"Invalid lux reading: {lux}")
+            return False
+
+        slider_val = self._lux_to_slider_value(lux_val)
+
+        current_slider = self.brightness.get_value()
+
+        if abs(current_slider - slider_val) >= 2:
+            self.brightness.set_value(slider_val)
+
+        return False
+
+    def _finish_auto_brightness_poll_error(self, err_msg):
+        self._auto_brightness_poll_in_progress = False
+        print(f"Auto brightness lux read error: {err_msg}")
+        return False
             
             
             
