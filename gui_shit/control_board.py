@@ -15,6 +15,7 @@ device = uinput.Device([
     uinput.KEY_DOWN,
     uinput.KEY_LEFT,
     uinput.KEY_RIGHT,
+    uinput.BTN_LEFT,
 ])
 
 SERIAL_PORT = "/dev/ttyAMA4" 
@@ -57,7 +58,9 @@ def main():
                 elif line == "RIGHT":
                     device.emit_click(uinput.KEY_RIGHT)
                 elif line == "ENTER":
-                    device.emit_click(uinput.KEY_ENTER)
+                    device.emit(uinput.BTN_LEFT, 1)
+                    time.sleep(0.02)
+                    device.emit(uinput.BTN_LEFT, 0)
 
             except Exception as e:
                 # Silently catch decode errors from serial noise
