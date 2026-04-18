@@ -1,10 +1,17 @@
 [Unit]
 Description=KIPS MKII Background Controls
-After=network.target
+# Wait until the device manager has settled
+After=systemd-udev-settle.service
+Wants=systemd-udev-settle.service
 
 [Service]
-ExecStart=/usr/bin/python3 /home/kips1/Desktop/KIPS-MKII/gui_shit/control_board.py
+# This ensures the uinput module is loaded BEFORE the script starts
+ExecStartPre=/sbin/modprobe uinput
+ExecStart=/usr/bin/python3 /home/kipster/KIPS-MKII/gui_shit/controls.py
 User=kipster
+# Added these to give the process the rights to handle input
+Group=input
+SupplementaryGroups=input
 Restart=always
 RestartSec=5
 
