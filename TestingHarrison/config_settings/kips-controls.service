@@ -3,7 +3,7 @@ Description=KIPS MKII Background Controls
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 /home/kipster/KIPS-MKII/gui_shit/control_board.py
+ExecStart=/usr/bin/python3 /home/kips1/KIPS-MKII/gui_shit/control_board.py
 User=kipster
 Restart=always
 RestartSec=5
