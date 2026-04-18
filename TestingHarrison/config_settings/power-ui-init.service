@@ -1,0 +1,15 @@
+[Unit]
+Description=KIPS MKII UI Switcher
+After=systemd-user-sessions.service plymouth-quit-active.service
+Wants=systemd-user-sessions.service
+
+[Service]
+Type=oneshot
+# Fixed the spelling of Environment here
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/local/bin/ui-switcher.sh
+RemainAfterExit=yes
+ExecStartPre=/bin/sleep 2
+
+[Install]
+WantedBy=graphical.target
