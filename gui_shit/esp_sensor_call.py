@@ -11,6 +11,8 @@ CMD_SENSOR_1 = 1
 CMD_SENSOR_2 = 2
 CMD_HEARTBEAT = 3
 CMD_LDR = 4
+CMD_BATTERY = 5
+CMD_PLUG_STATUS = 6
 
 
 class SensorProtocolError(RuntimeError):
@@ -95,14 +97,26 @@ class SensorClient:
 
             raise SensorProtocolError("Timed out waiting for heartbeat session to complete")
 
+    def read_battery(self):
+        with self._open() as ser:
+            self._send_command(ser, CMD_BATTERY)
+            voltage = self._read_until_prefix(ser, f"BAT_V:")
+            state_of_charge = self._read_until_prefix(ser, f"BAT_P:")
+            return voltage, state_of_charge
+
+    def read_plugstatus(self):
+        with self._open() as ser:
+            self._send_command(ser, CMD_PLUG_STATUS)
+            return self._read_until_prefix(ser, "PLUG_STAT:")
 
 
 def call_data(
     tempHum: bool = False,
-    lux: bool = False,
-    hb: bool = False,
-    temp_internal: bool = False,
     sensor2: bool = False,
+    hb: bool = False,
+    lux: bool = False,
+    battery: bool = False,
+    plugstatus: bool = False,
     port: str = SERIAL_PORT,
 ) -> Union[Tuple[str, str], str, float, None]:
     """
@@ -126,8 +140,10 @@ def call_data(
         return client.read_heartbeat()
     if lux:
         return client.read_ldr()
-    if temp_internal:
-        raise NotImplementedError("temp_internal is not implemented in master_everything.ino")
+    if battery:
+        return client.read_battery()
+    if plugstatus:
+        return client.read_plugstatus()
     return None
 
 
@@ -137,16 +153,18 @@ if __name__ == "__main__":
     parser.add_argument("--sensor2", action="store_true", help="Read sensor 2 temperature and humidity")
     parser.add_argument("--lux", action="store_true", help="Read LDR value")
     parser.add_argument("--hb", action="store_true", help="Read heartbeat average BPM")
-    parser.add_argument("--internaltemp", action="store_true", help="Unsupported in current firmware")
+    parser.add_argument("--battery", action="store_true", help="Read battery stats")
+    parser.add_argument("--plugstatus", action="store_true", help="detect wall power connected")
     parser.add_argument("--port", default=SERIAL_PORT, help=f"Serial port (default: {SERIAL_PORT})")
     args = parser.parse_args()
 
     result = call_data(
         tempHum=args.temphum,
-        lux=args.lux,
-        hb=args.hb,
-        temp_internal=args.internaltemp,
         sensor2=args.sensor2,
+        hb=args.hb,
+        lux=args.lux,
+        battery=args.battery,
+        plugstatus=args.plugstatus,
         port=args.port,
     )
     print(result)
