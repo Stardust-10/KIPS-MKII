@@ -1,16 +1,11 @@
+#!/usr/bin/env python3
 import serial
 import uinput
 import time
 import os
-from pynput.keyboard import Key, Controller as KeyboardController
 
-os.environ['PYNPUT_BACKEND_KEYBOARD'] = 'uinput'
-os.environ['PYNPUT_BACKEND_MOUSE'] = 'uinput'
-
-
-keyboard = KeyboardController()
-
-# Initialize the virtual device with both Mouse and Keyboard capabilities
+# Initialize the virtual device with Mouse and Keyboard capabilities
+# This talks directly to /dev/uinput (The Linux Kernel)
 device = uinput.Device([
     uinput.REL_X,
     uinput.REL_Y,
@@ -20,17 +15,16 @@ device = uinput.Device([
     uinput.KEY_DOWN,
     uinput.KEY_LEFT,
     uinput.KEY_RIGHT,
-    uinput.BTN_LEFT,
 ])
 
+# Matches your CM4 Serial pinout
 SERIAL_PORT = "/dev/ttyAMA4" 
 BAUD_RATE = 115200
 
 def main():
     try:
-        # Added a longer timeout to ensure we don't drop half-lines
         ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=0.5)
-        print(f"Bridge Active. Listening for KIPS MKII on {SERIAL_PORT}...")
+        print(f"Bridge Active. Listening on {SERIAL_PORT}...")
     except Exception as e:
         print(f"Connection Error: {e}")
         return
@@ -38,7 +32,7 @@ def main():
     while True:
         if ser.in_waiting > 0:
             try:
-                line = ser.readline().decode('utf-8').strip()
+                line = ser.readline().decode('utf-8', errors='ignore').strip()
                 if not line:
                     continue
 
@@ -46,14 +40,12 @@ def main():
                 if line.startswith("M,"):
                     parts = line.split(',')
                     if len(parts) == 3:
-                        # Your values are large (e.g., -2165). 
-                        # Dividing by 50-100 is usually good for a 800x480 screen.
                         dx = int(parts[1]) // 80 
                         dy = int(parts[2]) // 80
                         device.emit(uinput.REL_X, dx)
                         device.emit(uinput.REL_Y, dy)
 
-                # Handle Digital Buttons [cite: 35, 41-45]
+                # Handle Digital Buttons
                 elif line == "UP":
                     device.emit_click(uinput.KEY_UP)
                 elif line == "DOWN":
@@ -63,12 +55,12 @@ def main():
                 elif line == "RIGHT":
                     device.emit_click(uinput.KEY_RIGHT)
                 elif line == "ENTER":
+                    # Emit a Left Mouse Click
                     device.emit(uinput.BTN_LEFT, 1)
                     time.sleep(0.02)
                     device.emit(uinput.BTN_LEFT, 0)
 
             except Exception as e:
-                # Silently catch decode errors from serial noise
                 continue
 
 if __name__ == "__main__":
