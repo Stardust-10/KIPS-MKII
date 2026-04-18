@@ -1,0 +1,12 @@
+[Unit]
+Description=KIPS MKII Background Controls
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/kipster/KIPS-MKII/gui_shit/controls.py
+User=kipster
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
