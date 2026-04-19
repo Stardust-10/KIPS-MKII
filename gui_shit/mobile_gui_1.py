@@ -2,6 +2,11 @@ import os
 import sys
 import serial
 import threading
+import sys
+
+#sys.stdout = open("/tmp/mobile_gui_stdout.log", "a", buffering=1)
+#sys.stderr = open("/tmp/mobile_gui_stderr.log", "a", buffering=1)
+
 
 DIRR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(DIRR)
@@ -42,9 +47,6 @@ PAGE_SIZE = ROWS * COLS
 value = 1
 wifi_val = 0
 vol_value = 0
-
-
-
 
 @dataclass
 class AppEntry:
@@ -393,14 +395,13 @@ class Launcher(Gtk.Application):
 
 
         ###################################################################################
-        self.humidity_label_static1 = self.builder.get_object("humidty_label_static1")
+        self.humidity_label_static1 = self.builder.get_object("humidity_label_static1")
         self.humidity_output_stack1 = self.builder.get_object("humidity_output_stack1")
         self.humidity_spinner1 = self.builder.get_object("humidity_spinner1")
         self.humidity_label1 = self.builder.get_object("humidity_label1")
         self.heart_beat_enter = self.builder.get_object("heart_beat_enter")
         ###################################################################################
-
-
+        
         self._auto_brightness_enabled = False
         self._auto_brightness_poll_in_progress = False
         self._auto_brightness_timer_id = None
@@ -455,6 +456,37 @@ class Launcher(Gtk.Application):
         self.status_radio_button = self.builder.get_object("status_radio_button")
         self.radio_status_label = self.builder.get_object("radio_status_label")
                 
+        self.test_button = self.builder.get_object("test_button")
+        self.exit_button = self.builder.get_object("exit_glade")
+        self.exit_button.connect("clicked", self.on_exit_clicked)
+        
+       
+        
+
+        
+        
+        
+        
+        
+        
+        required_widgets = {
+            "main_window": self.window,
+            "content_stack": self.content_stack,
+            "appStack": self.stack,
+            "humidity_output_stack1": self.humidity_output_stack1,
+            "humidity_spinner1": self.humidity_spinner1,
+            "humidity_label1": self.humidity_label1,
+            "heart_beat_enter": self.heart_beat_enter,
+            "background_color": self.background_color_button,
+            "background_image": self.background_image,
+            "Font": self.font,
+            "font_color": self.font_color_select,
+            "manual_brightness_tab": self.manual_brightness_tab,
+        }
+
+        for name, obj in required_widgets.items():
+            if obj is None:
+                print(f"GLADE LOAD ERROR: missing widget '{name}'")
         
         #Additional radio set up
         self.am_fm_button = self.builder.get_object("AM_FM_Button")
@@ -602,7 +634,7 @@ class Launcher(Gtk.Application):
         
         self.add_window(win)
 
-        #win.fullscreen()
+        win.fullscreen()
         win.show_all()
 
         # If your .glade left a single FlowBox in the Stack, remove it; we create pages dynamically.
@@ -678,6 +710,26 @@ class Launcher(Gtk.Application):
         win.set_application(self)
         win.show_all()
 
+
+    def open_font_color_dialog(self, button=None):
+        dialog = Gtk.ColorChooserDialog(title="Choose Font Color", parent=self.window)
+        dialog.set_modal(True)
+
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            rgba = dialog.get_rgba()
+
+            hex_color = "#{:02x}{:02x}{:02x}".format(
+                int(rgba.red * 255),
+                int(rgba.green * 255),
+                int(rgba.blue * 255)
+            )
+
+            print("Selected font HEX", hex_color)
+            self.app_defaults["font_color"] = hex_color
+            self.apply_all_styles()
+
+        dialog.destroy()
 
             
     def _open_heartbeat_page(self, button):
