@@ -156,7 +156,7 @@ class Launcher(Gtk.Application):
         icon_path=os.path.join(BASE_DIR, "icons", "Heart_128x128.png"),
         stack_name="heartbeat_page"
     )
-
+    
     def _set_image_scaled(self, image_widget, file_path, size_px=28):
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
             file_path, 
@@ -167,25 +167,43 @@ class Launcher(Gtk.Application):
         image_widget.set_from_pixbuf(pixbuf)
 
     def _update_battery_val(self):
-        global value
         try:
-            with open("/tmp/batt_capacity", "r") as f:
-                contents = f.read().strip()
-                percent = contents.split(".0")[0]
-                lp = contents.split(".0")[1]
-                if lp:
-                    lp = True
-                #print(lp)
-                percent = (int(percent))
-                #print(f'percent: {percent}')
-                self._update_battery_icon(percent, lp, False)  # example values
-                return(percent)
-        except FileNotFoundError:
-            # FIX THIS
-            #self._update_battery_icon(-1, False, False)
+            # 1. Get Plug Status (0 = Plugged, 1 = Unplugged)
+            plug_raw = call_data(plugstatus=True)
+            if plug_raw is not None:
+                # We flip the logic here: True if 0, False if 1
+                self._plug_status = (int(plug_raw) == 0)
+            
+            # 2. Get Battery Stats
+            # Returns (voltage, soc) e.g., ("8.24", "95.5")
+            batt_data = call_data(battery=True)
+            
+            if batt_data and len(batt_data) == 2:
+                voltage_str, soc_str = batt_data
+                
+                # Convert string percentage to integer
+                self._battery_percentage = int(float(soc_str))
+                
+                # Low power if < 15% and NOT plugged in
+                #lp_active = (self._battery_percentage < 15 and not self._plug_status)
+                
+                # Update the icon on the GUI
+                self._update_battery_icon(
+                    self._battery_percentage, 
+                    low_power=False, 
+                    is_charging=self._plug_status
+                )
+                
+                # Optional: Print to console for debugging
+                # print(f"Battery Sync: {self._battery_percentage}% | Charging: {self._plug_status}")
+
+        except Exception as e:
+            print(f"Error during 30s battery poll: {e}")
+            # Failsafe: show a neutral 'charging' state if communication breaks
             self._update_battery_icon(100, False, True)
-            print('Battery read error')
-            return(-1)
+
+        return True  # REQUIRED to keep the GLib timeout active    
+        
     
     def _update_wifi_val(self, verbose=False):
         def signal_info():
@@ -286,36 +304,38 @@ class Launcher(Gtk.Application):
 
         self._set_image_scaled(self.wifi_icon, icon_name, size_px=28)
 
-    def _update_battery_icon(self, percentage, low_power=False, is_charging = False):
+    def _update_battery_icon(self, percentage, low_power=False, is_charging=False):
         if self.battery_icon is None:
-            #print('false')
             return False
-        if low_power:
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "wifi_0.png")
-        elif is_charging:
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_charging.png")
+
+        # Priority 1: Charging Status
+        if is_charging:
+            icon_name = os.path.join(BASE_DIR, "icons", "battery_charging.png")
+        # Priority 2: Low Power Warning (using your specific wifi_0.png placeholder)
+        elif low_power:
+            icon_name = os.path.join(BASE_DIR, "icons", "wifi_0.png")
+        # Priority 3: Percentage-based icons (1 is full, 9 is nearly empty)
         elif percentage <= 10.0:
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_9.png")
+            icon_name = os.path.join(BASE_DIR, "icons", "battery_9.png")
         elif percentage <= 20.0:
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_8.png")
+            icon_name = os.path.join(BASE_DIR, "icons", "battery_8.png")
         elif percentage <= 30.0:
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_7.png")
+            icon_name = os.path.join(BASE_DIR, "icons", "battery_7.png")
         elif percentage <= 40.0:
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_6.png")
+            icon_name = os.path.join(BASE_DIR, "icons", "battery_6.png")
         elif percentage <= 50.0:
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_5.png")
+            icon_name = os.path.join(BASE_DIR, "icons", "battery_5.png")
         elif percentage <= 60.0:
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_4.png")
+            icon_name = os.path.join(BASE_DIR, "icons", "battery_4.png")
         elif percentage <= 70.0:
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_3.png")
+            icon_name = os.path.join(BASE_DIR, "icons", "battery_3.png")
         elif percentage <= 80.0:
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_2.png")
+            icon_name = os.path.join(BASE_DIR, "icons", "battery_2.png")
         elif percentage <= 90.0:
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_1.png")
+            icon_name = os.path.join(BASE_DIR, "icons", "battery_1.png")
         else:
-            #icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_0.png")
-            # FIX THIS
-            icon_name = icon_path=os.path.join(BASE_DIR, "icons", "battery_charging.png")
+            # 91% - 100% is "Full" (battery_0)
+            icon_name = os.path.join(BASE_DIR, "icons", "battery_0.png")
 
         self._set_image_scaled(self.battery_icon, icon_name, size_px=100)
 
@@ -407,6 +427,9 @@ class Launcher(Gtk.Application):
         self._auto_brightness_timer_id = None
         self._last_auto_brightness_level = None
 
+        self._battery_percentage = None
+        self._plug_status = False
+
 
         #self.brightness_label = self.builder.get_object("brightness_label")
         #self.brightness_output_stack = self.builder.get_object("brightness_output_stack")
@@ -460,7 +483,9 @@ class Launcher(Gtk.Application):
         self.exit_button = self.builder.get_object("exit_glade")
         self.exit_button.connect("clicked", self.on_exit_clicked)
         
-       
+        self.desktop_mode_button = self.builder.get_object("desktop_mode_button")
+        if self.desktop_mode_button:
+            self.desktop_mode_button.connect("clicked", self.on_desktop_mode_clicked)
         
 
         
@@ -1433,7 +1458,13 @@ class Launcher(Gtk.Application):
             )
 
         self._start_auto_brightness_poll()
-
+    def start_battery_polling(self):
+        """Initializes the 30-second timer for battery and plug status."""
+        # Run the first update immediately
+        self._update_battery_val()
+        
+        # Schedule to run every 30 seconds thereafter
+        self._battery_timer_id = GLib.timeout_add_seconds(30, self._update_battery_val)
     def stop_auto_brightness(self):
         self._auto_brightness_enabled = False
 
@@ -1976,8 +2007,14 @@ class Launcher(Gtk.Application):
         except Exception as e:
             print(f"Css Syntax Error: {e}")
         
-   
-        
+    #exit configuration
+    def on_desktop_mode_clicked(self, button=None):
+        import subprocess
+
+        try:
+            subprocess.Popen(["sudo", "/usr/local/bin/kips_switch_to_desktop.sh"])
+        except Exception as e:
+            print(f"Failed to switch to desktop mode: {e}")
     def on_exit_clicked(self,widget):
         print("Shuting down im out bro")
         sys.exit(0)
