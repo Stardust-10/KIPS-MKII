@@ -1818,19 +1818,6 @@ audio-volume-medium-symbolic</property>
                                 <property name="position">0</property>
                               </packing>
                             </child>
-                            <child>
-                              <object class="GtkSwitch" id="radio_on_off">
-                                <property name="name">radio_on_off</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="padding">16</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -1851,6 +1838,7 @@ audio-volume-medium-symbolic</property>
                             <property name="homogeneous">True</property>
                             <child>
                               <object class="GtkLabel" id="radio_freq_display">
+                                <property name="name">radio_freq_display</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="label" translatable="yes">--.-- MHz</property>
@@ -1863,6 +1851,7 @@ audio-volume-medium-symbolic</property>
                             </child>
                             <child>
                               <object class="GtkLabel" id="radio_mode_label">
+                                <property name="name">radio_mode_label</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="label" translatable="yes">FM</property>
@@ -1875,6 +1864,7 @@ audio-volume-medium-symbolic</property>
                             </child>
                             <child>
                               <object class="GtkLabel" id="radio_meta_label">
+                                <property name="name">radio_meta_label</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="label" translatable="yes">Waiting for status...</property>
@@ -1977,8 +1967,8 @@ audio-volume-medium-symbolic</property>
                             <property name="margin-bottom">8</property>
                             <property name="spacing">12</property>
                             <child>
-                              <object class="GtkButton" id="seek_down_button">
-                                <property name="label" translatable="yes">&lt;&lt; SEEK</property>
+                              <object class="GtkButton" id="step_down_button">
+                                <property name="label" translatable="yes">- STEP </property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
@@ -1990,8 +1980,8 @@ audio-volume-medium-symbolic</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton" id="seek_up_button">
-                                <property name="label" translatable="yes">SEEK &gt;&gt;</property>
+                              <object class="GtkButton" id="step_up_button">
+                                <property name="label" translatable="yes">STEP +</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
@@ -2017,8 +2007,9 @@ audio-volume-medium-symbolic</property>
                             <property name="margin-bottom">8</property>
                             <property name="spacing">12</property>
                             <child>
-                              <object class="GtkButton" id="step_down_button">
-                                <property name="label" translatable="yes">- STEP </property>
+                              <object class="GtkButton" id="vol_dn_button">
+                                <property name="label" translatable="yes">- Volume</property>
+                                <property name="name">vol_dn_button</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
@@ -2030,8 +2021,9 @@ audio-volume-medium-symbolic</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton" id="step_up_button">
-                                <property name="label" translatable="yes">STEP +</property>
+                              <object class="GtkButton" id="vol_up_button">
+                                <property name="label" translatable="yes">Volume +</property>
+                                <property name="name">vol_up_button</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
@@ -2076,48 +2068,8 @@ audio-volume-medium-symbolic</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkBox">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="halign">center</property>
-                            <property name="spacing">12</property>
-                            <child>
-                              <object class="GtkButton" id="vol_dn_button">
-                                <property name="label" translatable="yes">- Volume</property>
-                                <property name="name">vol_dn_button</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="vol_up_button">
-                                <property name="label" translatable="yes">Volume +</property>
-                                <property name="name">vol_up_button</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">7</property>
-                          </packing>
-                        </child>
-                        <child>
                           <object class="GtkLabel" id="radio_status_label">
+                            <property name="name">radio_status_label</property>
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Radio ready</property>
@@ -2125,7 +2077,7 @@ audio-volume-medium-symbolic</property>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">8</property>
+                            <property name="position">7</property>
                           </packing>
                         </child>
                       </object>
