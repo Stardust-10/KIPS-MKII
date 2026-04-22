@@ -743,7 +743,7 @@ class Launcher(Gtk.Application):
             "type": "external", 
             "handler" : "camera_toggle",
             "icon_path": os.path.join(BASE_DIR, "icons", 
-            "calculator_128x128.png")},
+            "camera_resized.png")},
             
             
             {"name": "app_test5.png", 
